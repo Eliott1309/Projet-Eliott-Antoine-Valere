@@ -1,2 +1,69 @@
-a = 123
-print(a)
+import pygame
+import sys
+import subprocess
+pygame.init()
+
+
+#fenetre
+WIDTH, HEIGHT = 1080,720
+screen = pygame.display.set_mod((WIDTH, HEIGHT))
+pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu 
+
+#resssources
+'''permet de mettre les images, musiques etc en fond'''
+background = pygame.image.load("assets/bg.png")
+background = pygame.transform.scale(background, (WIDTH, HEIGHT)) #redimensionner image de fond
+
+pygame.mixer.music.load("assets/music.mp3")
+pygame.mixer.music.play(-1) #musique de fond en boucle
+
+#couleurs
+'''J'initie les couleurs pour que ca soit plus simple de les mettre pour les boutons'''
+WHITE = (255, 255, 255)
+TRANSLUCENT_BLUE = (0, 80, 200, 180)
+HOVER_BLUE = (0,140, 255, 220) 
+SHADOW = (0, 0, 0)
+
+#polices
+try : 
+    FONT_TITLES = pygame.font.Font("assets/pixels.ttf", 72)
+    FONT_BUTTON = pygame.font.Font("assets/pixels.ttf", 36)
+
+except :
+    FONT_TITLES = pygame.font.Font(None, 72)
+    FONT_BUTTON = pygame.font.Font(None, 36)
+
+class Button:
+    def __init__(self,text,center_y,action):
+        self.text = text
+        self.action = action
+        self.center_y = center_y
+        self.widht, self.height = 320,70 
+        self.rect = pygame.Rect((0,0,self.width,self.height))
+        self.rect.center = (WIDTH//2, center_y)
+
+    def draw(self, win, mouse_pos): #Je cree une fonction pour changer de couleur un bouton quand il est survole
+        is_hover = self.rect.collidepoint(mouse_pos)
+        color = HOVER_BLUE if is_hover else TRANSLUCENT_BLUE
+        button_surface = pygame.Surface((self.widht,self.height), pygame.SRCALPHA)
+        pygame.draw.rect(button_surface, color, (0,0,self.widht, self.height), border_radius=16) #je cree un rectangle pour les boutons
+        win.blit(button_surface, self.rect) #afficher le bouton 
+
+        text_surf = FONT_BUTTON.render(self.text, True, WHITE) #crer limage du texte
+        text_rect = text_surf.get_rect(center=self.rect.center) #centre le texte
+
+#je cree une legere ombre
+        shadow = FONT_BUTTON.pygame.font.render(self.text, True, SHADOW) 
+        win.blit(shadow, (text_rect.x+2, text_rect.y+2))
+        win.blit(text_surf, text_rect)
+
+    
+    def is_clicked(self, mouse_pos, mouse_pressed):
+        return self.rect.collidepoint(mouse_pos) and mouse_pressed[0] #retourne true si ya clic gauche sur le bouton
+
+
+#liste des boutons
+
+buttons = [
+    Button
+]
