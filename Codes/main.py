@@ -65,5 +65,52 @@ class Button:
 #liste des boutons
 
 buttons = [
-    Button
+    Button("Nouvelle Partie", 320, "new"),
+    Button("Charger Partie", 400, "load"),
+    Button("Options", 480, "options"),
+    Button("Quitter", 560, "quit")
 ]
+
+
+#boucle principale du menu
+
+running = True
+clock = pygame.time.Clock()
+
+while running:
+    clock.tick(60)
+    screen.blit(background, (0,0))
+
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_pressed = pygame.mouse.get_pressed()
+
+    title = FONT_TITLES.render("Mon Jeu", True, WHITE) #partie esthetique du menu
+    shadow = FONT_TITLES.render("Mon Jeu", True, SHADOW)
+    screen.blit(shadow, (WIDTH//2 - title.get_width()//2 + 3, 103)) #j'affiche l'ombre legerement decalee 
+    screen.blit(title, (WIDTH//2 - title.get_width()//2 , 100)) #affichage du texte principal
+
+    #je definis ce que font les boutons
+    for btn in buttons:
+        btn.draw(screen, mouse_pos)
+        if btn.is_clicked(mouse_pos, mouse_pressed):
+            pygame.time.delay(200)
+            if btn.action == "new" :
+                print("Nouvelle Partie")
+                pygame.quit()
+                subprocess.run(['python', 'new_game.py'])
+                sys.exit()
+            elif btn.action == "load":
+                print("Charger Partie")
+            elif btn.action == "options":
+                print("Options")
+            elif btn.action == "quit":
+                running = False
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    
+    pygame.display.flip()
+
+pygame.quit()
+print("fermeture du jeu")
