@@ -39,7 +39,7 @@ class Button:
         self.action = action
         self.center_y = center_y
         self.width, self.height = 320,70 
-        self.rect = pygame.Rect((0,0,self.width,self.height))
+        self.rect = pygame.Rect(0,0, self.width, self.height)
         self.rect.center = (WIDTH//2, center_y)
 
     def draw(self, win, mouse_pos): #Je cree une fonction pour changer de couleur un bouton quand il est survole
@@ -84,8 +84,8 @@ while running:
     mouse_pos = pygame.mouse.get_pos()
     mouse_pressed = pygame.mouse.get_pressed()
 
-    title = FONT_TITLES.render("Mon Jeu", True, WHITE) #partie esthetique du menu
-    shadow = FONT_TITLES.render("Mon Jeu", True, SHADOW)
+    title = FONT_TITLES.render("Bindings of Isaac", True, WHITE) #partie esthetique du menu
+    shadow = FONT_TITLES.render("Bindings of Isaac", True, SHADOW) #titre a changer
     screen.blit(shadow, (WIDTH//2 - title.get_width()//2 + 3, 103)) #j'affiche l'ombre legerement decalee 
     screen.blit(title, (WIDTH//2 - title.get_width()//2 , 100)) #affichage du texte principal
 
