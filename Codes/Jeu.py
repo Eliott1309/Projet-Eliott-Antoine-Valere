@@ -16,9 +16,6 @@ RED = (200, 50, 50)
 BLUE = (50, 100, 255)
 BLACK = (0, 0, 0)
 
-# ----------------------
-# Classes
-# ----------------------
 
 class Player:
     def __init__(self):
@@ -74,9 +71,6 @@ class Enemy:
         pygame.draw.rect(screen, RED, self.rect)
 
 
-# ----------------------
-# Initialisation
-# ----------------------
 
 player = Player()
 enemy = Enemy()
@@ -84,9 +78,6 @@ bullets = []
 
 shoot_cooldown = 0
 
-# ----------------------
-# Game loop
-# ----------------------
 
 running = True
 while running:
@@ -103,7 +94,7 @@ while running:
     # Déplacement joueur
     player.move(keys)
 
-    # Tir (flèches)
+    # Tir 
     if shoot_cooldown > 0:
         shoot_cooldown -= 1
 
@@ -138,7 +129,6 @@ while running:
     if enemy.hp > 0:
         enemy.update(player)
 
-    # Draw
     player.draw()
 
     for bullet in bullets:
