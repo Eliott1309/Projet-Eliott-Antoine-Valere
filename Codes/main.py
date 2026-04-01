@@ -1,6 +1,11 @@
 import pygame
 import sys
 import subprocess
+from Jeu import lancer_jeu
+
+def start():
+    lancer_jeu()
+
 pygame.init()
 
 
@@ -11,10 +16,10 @@ pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu
 
 #resssources
 '''permet de mettre les images, musiques etc en fond'''
-background = pygame.image.load("../Assets/bg.png")
+background = pygame.image.load(r"C:\Users\User\Documents\Projet-Eliott-Antoine-Valere\Assets\bg.jpeg") #mettre une image de fond
 background = pygame.transform.scale(background, (WIDTH, HEIGHT)) #redimensionner image de fond
 
-pygame.mixer.music.load("../Assets/music.mp3")
+pygame.mixer.music.load(r"C:\Users\User\Documents\Projet-Eliott-Antoine-Valere\Assets\music.mp3")
 pygame.mixer.music.play(-1) #musique de fond en boucle
 
 #couleurs
@@ -65,7 +70,7 @@ class Button:
 #liste des boutons
 
 buttons = [
-    Button("Nouvelle Partie", 320, "new"),
+    Button("Nouvelle Partie", 320, "new",),
     Button("Charger Partie", 400, "load"),
     Button("Options", 480, "options"),
     Button("Quitter", 560, "quit")
@@ -94,11 +99,11 @@ while running:
         btn.draw(screen, mouse_pos)
         if btn.is_clicked(mouse_pos, mouse_pressed):
             pygame.time.delay(200)
-            if btn.action == "new" :
+            if btn.action == "new":
                 print("Nouvelle Partie")
+                running = False
                 pygame.quit()
-                subprocess.run(['python', 'new_game.py'])
-                sys.exit()
+                lancer_jeu()
             elif btn.action == "load":
                 print("Charger Partie")
             elif btn.action == "options":
