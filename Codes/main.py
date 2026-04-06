@@ -1,7 +1,7 @@
 import pygame
 import sys
 import subprocess
-from Jeu import lancer_jeu
+from jeu import lancer_jeu
 
 def start():
     lancer_jeu()

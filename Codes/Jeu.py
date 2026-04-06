@@ -1,7 +1,9 @@
 import pygame
 import sys
+from map import Map
 
 def lancer_jeu():
+    """Lance le jeu principal."""
     pygame.init()
 
     # Fenêtre
@@ -19,10 +21,12 @@ def lancer_jeu():
 
     class Player:
         def __init__(self):
+            """Initialise le joueur avec une position et une vitesse."""
             self.rect = pygame.Rect(400, 300, 40, 40)
             self.speed = 5
 
         def move(self, keys):
+            """Déplace le joueur selon les touches pressées."""
             if keys[pygame.K_w]:
                 self.rect.y -= self.speed
             if keys[pygame.K_s]:
@@ -33,44 +37,31 @@ def lancer_jeu():
                 self.rect.x += self.speed
 
         def draw(self):
+            """Dessine le joueur sur l'écran."""
             pygame.draw.rect(screen, BLUE, self.rect)
 
     class Bullet:
         def __init__(self, x, y, dx, dy):
+            """Initialise la balle avec une position et une direction."""
             self.rect = pygame.Rect(x, y, 10, 10)
             self.dx = dx
             self.dy = dy
             self.speed = 8
 
         def update(self):
+            """Met à jour la position de la balle."""
             self.rect.x += self.dx * self.speed
             self.rect.y += self.dy * self.speed
 
         def draw(self):
+            """Dessine la balle sur l'écran."""
             pygame.draw.rect(screen, WHITE, self.rect)
 
-    class Enemy:
-        def __init__(self):
-            self.rect = pygame.Rect(100, 100, 40, 40)
-            self.speed = 2
-            self.hp = 3
-
-        def update(self, player):
-            if player.rect.x < self.rect.x:
-                self.rect.x -= self.speed
-            if player.rect.x > self.rect.x:
-                self.rect.x += self.speed
-            if player.rect.y < self.rect.y:
-                self.rect.y -= self.speed
-            if player.rect.y > self.rect.y:
-                self.rect.y += self.speed
-
-        def draw(self):
-            pygame.draw.rect(screen, RED, self.rect)
+    
 
     player = Player()
-    enemy = Enemy()
     bullets = []
+    game_map = Map()
 
     shoot_cooldown = 0
     running = True
@@ -81,12 +72,30 @@ def lancer_jeu():
 
         keys = pygame.key.get_pressed()
 
+        
+        if player.rect.right > WIDTH:
+            game_map.change_room(1, 0)
+            player.rect.left = 0
+
+        if player.rect.left < 0:
+            game_map.change_room(-1, 0)
+            player.rect.right = WIDTH
+
+        if player.rect.top < 0:
+            game_map.change_room(0, -1)
+            player.rect.bottom = HEIGHT
+
+        if player.rect.bottom > HEIGHT:
+            game_map.change_room(0, 1)
+            player.rect.top = 0
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
         player.move(keys)
 
+        
         if shoot_cooldown > 0:
             shoot_cooldown -= 1
 
@@ -104,33 +113,36 @@ def lancer_jeu():
                 bullets.append(Bullet(player.rect.centerx, player.rect.centery, 1, 0))
                 shoot_cooldown = 10
 
+        
         for bullet in bullets[:]:
             bullet.update()
 
             if not screen.get_rect().colliderect(bullet.rect):
                 bullets.remove(bullet)
+                continue
 
-            if bullet.rect.colliderect(enemy.rect):
-                bullets.remove(bullet)
-                enemy.hp -= 1
+            for enemy in game_map.current_room.enemies:
+                if enemy.hp > 0 and bullet.rect.colliderect(enemy.rect):
+                    bullets.remove(bullet)
+                    enemy.hp -= 1
+                    break
 
-        if enemy.hp > 0:
-            enemy.update(player)
+        
+        game_map.current_room.update(player)
+        game_map.current_room.draw(screen)
 
+        
         player.draw()
 
         for bullet in bullets:
             bullet.draw()
 
-        if enemy.hp > 0:
-            enemy.draw()
-
         pygame.display.flip()
-
+    
+    
+    
     pygame.quit()
     sys.exit()
-
-
 
 if __name__ == "__main__":
     lancer_jeu()
