@@ -72,22 +72,6 @@ def lancer_jeu():
 
         keys = pygame.key.get_pressed()
 
-        
-        if player.rect.right > WIDTH:
-            game_map.change_room(1, 0)
-            player.rect.left = 0
-
-        if player.rect.left < 0:
-            game_map.change_room(-1, 0)
-            player.rect.right = WIDTH
-
-        if player.rect.top < 0:
-            game_map.change_room(0, -1)
-            player.rect.bottom = HEIGHT
-
-        if player.rect.bottom > HEIGHT:
-            game_map.change_room(0, 1)
-            player.rect.top = 0
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -128,7 +112,7 @@ def lancer_jeu():
                     break
 
         
-        game_map.current_room.update(player)
+        game_map.update(player)
         game_map.current_room.draw(screen)
 
         
