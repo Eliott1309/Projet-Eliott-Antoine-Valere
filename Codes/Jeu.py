@@ -1,6 +1,6 @@
 import pygame
 import sys
-from map import Map
+from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH, DOOR_THICKNESS
 
 def lancer_jeu():
     """Lance le jeu principal."""
@@ -35,6 +35,33 @@ def lancer_jeu():
                 self.rect.x -= self.speed
             if keys[pygame.K_d]:
                 self.rect.x += self.speed
+        def collide_walls(self, current_room):
+            """Empêche le joueur de traverser les murs et les portes fermées."""
+            if self.rect.left < 0:
+                self.rect.left = 0
+            if self.rect.right > SCREEN_WIDTH:
+                self.rect.right = SCREEN_WIDTH
+            if self.rect.top < 0:
+                self.rect.top = 0
+            if self.rect.bottom > SCREEN_HEIGHT:
+                self.rect.bottom = SCREEN_HEIGHT
+
+            # Bloque les portes fermées ou inexistantes
+            for direction, door_rect in current_room.doors.items():
+                # Porte inactive (mur) ou porte active mais salle non vidée
+                is_blocked = (
+                    direction not in current_room.active_doors or
+                    not current_room.cleared
+                )
+                if is_blocked and self.rect.colliderect(door_rect):
+                    if direction == "up":
+                        self.rect.top = door_rect.bottom
+                    elif direction == "down":
+                        self.rect.bottom = door_rect.top
+                    elif direction == "left":
+                        self.rect.left = door_rect.right
+                    elif direction == "right":
+                        self.rect.right = door_rect.left
 
         def draw(self):
             """Dessine le joueur sur l'écran."""
@@ -113,7 +140,7 @@ def lancer_jeu():
 
         
         game_map.update(player)
-        game_map.current_room.draw(screen)
+        game_map.draw(screen)  
 
         
         player.draw()
