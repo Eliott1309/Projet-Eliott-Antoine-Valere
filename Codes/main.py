@@ -8,6 +8,8 @@ def start():
 
 pygame.init()
 
+#TEST 
+
 
 #fenetre
 WIDTH, HEIGHT = 1080,720
