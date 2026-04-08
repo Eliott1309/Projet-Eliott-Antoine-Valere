@@ -129,13 +129,13 @@ def lancer_jeu():
             if keys[pygame.K_i]:
                 bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, -1))
                 shoot_cooldown = 10
-            if keys[pygame.K_k]:
+            elif keys[pygame.K_k]:
                 bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, 1))
                 shoot_cooldown = 10
-            if keys[pygame.K_j]:
+            elif keys[pygame.K_j]:
                 bullets.append(Bullet(player.rect.centerx, player.rect.centery, -1, 0))
                 shoot_cooldown = 10
-            if keys[pygame.K_l]:
+            elif keys[pygame.K_l]:
                 bullets.append(Bullet(player.rect.centerx, player.rect.centery, 1, 0))
                 shoot_cooldown = 10
 
