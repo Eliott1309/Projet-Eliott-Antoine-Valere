@@ -8,7 +8,7 @@ def start():
 
 pygame.init()
 
-#TEST 
+#TEST Eliott
 
 
 #fenetre
