@@ -4,22 +4,104 @@ from entitees import Enemy
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-DOOR_SIZE = 60
 WALL_THICKNESS = 30
+DOOR_SIZE = 60
+
+TILE_SIZE = 40  # taille d'une tuile en pixels
+COLS = SCREEN_WIDTH // TILE_SIZE   # 20 colonnes
+ROWS = SCREEN_HEIGHT // TILE_SIZE  # 15 lignes
 
 MINI_ROOM_SIZE = 14
 MINI_ROOM_GAP = 4
 MINI_OFFSET_X = SCREEN_WIDTH - 90
 MINI_OFFSET_Y = 30
 
+
+def make_empty():
+    """Salle vide classique."""
+    grid = [[0]*COLS for _ in range(ROWS)]
+    return grid
+
+def make_piliers():
+    """Salle avec 4 piliers."""
+    grid = make_empty()
+    for px, py in [(5,4),(5,10),(14,4),(14,10)]:
+        for dy in range(2):
+            for dx in range(2):
+                grid[py+dy][px+dx] = 1
+    return grid
+
+def make_couloir_h():
+    """Couloir horizontal avec murs épais en haut et en bas."""
+    grid = [[1]*COLS for _ in range(ROWS)]
+    for row in range(5, 10):
+        for col in range(COLS):
+            grid[row][col] = 0
+    return grid
+
+def make_couloir_v():
+    """Couloir vertical."""
+    grid = [[1]*COLS for _ in range(ROWS)]
+    for row in range(ROWS):
+        for col in range(8, 12):
+            grid[row][col] = 0
+    return grid
+
+def make_croix():
+    """Salle en forme de croix."""
+    grid = [[1]*COLS for _ in range(ROWS)]
+    for row in range(5, 10):
+        for col in range(COLS):
+            grid[row][col] = 0
+    for row in range(ROWS):
+        for col in range(8, 12):
+            grid[row][col] = 0
+    return grid
+
+def make_chambres():
+    """Deux chambres reliées par un passage."""
+    grid = make_empty()
+    # mur de séparation vertical au milieu
+    for row in range(ROWS):
+        grid[row][10] = 1
+    # passage au centre
+    for row in range(6, 9):
+        grid[row][10] = 0
+    return grid
+
+ROOM_TEMPLATES = [
+    make_empty,
+    make_piliers,
+    make_chambres,
+    # make_couloir_h,   # à corriger plus tard
+    # make_couloir_v,   # à corriger plus tard
+    make_croix,       
+]
+
+
 class Room:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.enemies = [Enemy() for _ in range(random.randint(1, 3))]
-        self.cleared = False
-        self.visited = False
         self.active_doors = set()
+        self.visited = False
+        self.cleared = False
+
+        # Choix aléatoire du template
+        self.grid = random.choice(ROOM_TEMPLATES)()
+        self._apply_borders()
+
+        free_tiles = [
+            (col * TILE_SIZE + TILE_SIZE // 2, row * TILE_SIZE + TILE_SIZE // 2)
+            for row in range(1, ROWS - 1)
+            for col in range(1, COLS - 1)
+            if self.grid[row][col] == 0
+        ]
+        self.enemies = []
+        for _ in range(random.randint(1, 3)):
+            if free_tiles:
+                x, y = random.choice(free_tiles)
+                self.enemies.append(Enemy(x, y))
 
         self.door_directions = {
             "up":    (0, -1),
@@ -28,56 +110,53 @@ class Room:
             "right": ( 1, 0),
         }
 
+    def _apply_borders(self):
+        """Force les bords de la grille en murs."""
+        for col in range(COLS):
+            self.grid[0][col] = 1
+            self.grid[ROWS-1][col] = 1
+        for row in range(ROWS):
+            self.grid[row][0] = 1
+            self.grid[row][COLS-1] = 1
+
+    def _open_door(self, direction):
+        mid_col = COLS // 2
+        mid_row = ROWS // 2
+        if direction == "up":
+            for col in range(mid_col - 1, mid_col + 2):
+                self.grid[0][col] = 2
+        elif direction == "down":
+            for col in range(mid_col - 1, mid_col + 2):
+                self.grid[ROWS-1][col] = 2
+        elif direction == "left":
+            for row in range(mid_row - 1, mid_row + 2):
+                self.grid[row][0] = 2
+        elif direction == "right":
+            for row in range(mid_row - 1, mid_row + 2):
+                self.grid[row][COLS-1] = 2
+
+    def add_door(self, direction):
+        self.active_doors.add(direction)
+        self._open_door(direction)
+
     def get_wall_rects(self):
-        """
-        Retourne la liste des rectangles de collision des murs.
-        Chaque côté est découpé en segments autour de l'ouverture de porte.
-        """
+        """Retourne les rects de collision de toutes les tuiles mur."""
         rects = []
-        door_start = (SCREEN_WIDTH - DOOR_SIZE) // 2
-        door_end = door_start + DOOR_SIZE
-        door_start_v = (SCREEN_HEIGHT - DOOR_SIZE) // 2
-        door_end_v = door_start_v + DOOR_SIZE
-
-        # Mur du haut
-        if "up" in self.active_doors:
-            rects.append(pygame.Rect(0, 0, door_start, WALL_THICKNESS))
-            rects.append(pygame.Rect(door_end, 0, SCREEN_WIDTH - door_end, WALL_THICKNESS))
-        else:
-            rects.append(pygame.Rect(0, 0, SCREEN_WIDTH, WALL_THICKNESS))
-
-        # Mur du bas
-        if "down" in self.active_doors:
-            rects.append(pygame.Rect(0, SCREEN_HEIGHT - WALL_THICKNESS, door_start, WALL_THICKNESS))
-            rects.append(pygame.Rect(door_end, SCREEN_HEIGHT - WALL_THICKNESS, SCREEN_WIDTH - door_end, WALL_THICKNESS))
-        else:
-            rects.append(pygame.Rect(0, SCREEN_HEIGHT - WALL_THICKNESS, SCREEN_WIDTH, WALL_THICKNESS))
-
-        # Mur gauche
-        if "left" in self.active_doors:
-            rects.append(pygame.Rect(0, 0, WALL_THICKNESS, door_start_v))
-            rects.append(pygame.Rect(0, door_end_v, WALL_THICKNESS, SCREEN_HEIGHT - door_end_v))
-        else:
-            rects.append(pygame.Rect(0, 0, WALL_THICKNESS, SCREEN_HEIGHT))
-
-        # Mur droit
-        if "right" in self.active_doors:
-            rects.append(pygame.Rect(SCREEN_WIDTH - WALL_THICKNESS, 0, WALL_THICKNESS, door_start_v))
-            rects.append(pygame.Rect(SCREEN_WIDTH - WALL_THICKNESS, door_end_v, WALL_THICKNESS, SCREEN_HEIGHT - door_end_v))
-        else:
-            rects.append(pygame.Rect(SCREEN_WIDTH - WALL_THICKNESS, 0, WALL_THICKNESS, SCREEN_HEIGHT))
-
+        for row in range(ROWS):
+            for col in range(COLS):
+                if self.grid[row][col] == 1:
+                    rects.append(pygame.Rect(col*TILE_SIZE, row*TILE_SIZE, TILE_SIZE, TILE_SIZE))
         return rects
 
     def get_door_rects(self):
-        """Retourne les rects des portes actives avec leur direction."""
-        door_start_h = (SCREEN_WIDTH - DOOR_SIZE) // 2
-        door_start_v = (SCREEN_HEIGHT - DOOR_SIZE) // 2
+        """Retourne les rects des ouvertures de portes (pour le passage)."""
+        mid_col = COLS // 2
+        mid_row = ROWS // 2
         all_doors = {
-            "up":    pygame.Rect(door_start_h, 0, DOOR_SIZE, WALL_THICKNESS),
-            "down":  pygame.Rect(door_start_h, SCREEN_HEIGHT - WALL_THICKNESS, DOOR_SIZE, WALL_THICKNESS),
-            "left":  pygame.Rect(0, door_start_v, WALL_THICKNESS, DOOR_SIZE),
-            "right": pygame.Rect(SCREEN_WIDTH - WALL_THICKNESS, door_start_v, WALL_THICKNESS, DOOR_SIZE),
+            "up":    pygame.Rect((mid_col-1)*TILE_SIZE, 0, TILE_SIZE*3, TILE_SIZE),
+            "down":  pygame.Rect((mid_col-1)*TILE_SIZE, (ROWS-1)*TILE_SIZE, TILE_SIZE*3, TILE_SIZE),
+            "left":  pygame.Rect(0, (mid_row-1)*TILE_SIZE, TILE_SIZE, TILE_SIZE*3),
+            "right": pygame.Rect((COLS-1)*TILE_SIZE, (mid_row-1)*TILE_SIZE, TILE_SIZE, TILE_SIZE*3),
         }
         return {d: r for d, r in all_doors.items() if d in self.active_doors}
 
@@ -86,24 +165,27 @@ class Room:
             for enemy in self.enemies:
                 if enemy.hp > 0:
                     enemy.update(player)
-            if all(enemy.hp <= 0 for enemy in self.enemies):
+            if all(e.hp <= 0 for e in self.enemies):
                 self.cleared = True
 
     def draw(self, screen):
-        self._draw_walls(screen)
+        self._draw_tiles(screen)
         for enemy in self.enemies:
             if enemy.hp > 0:
                 enemy.draw(screen)
 
-    def _draw_walls(self, screen):
-        # Murs pleins
-        for rect in self.get_wall_rects():
-            pygame.draw.rect(screen, (80, 60, 40), rect)
+    def _draw_tiles(self, screen):
+        for row in range(ROWS):
+            for col in range(COLS):
+                tile = self.grid[row][col]
+                if tile == 1:
+                    pygame.draw.rect(screen, (80, 60, 40),
+                        (col*TILE_SIZE, row*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                elif tile == 2:
+                    color = (0, 200, 80) if self.cleared else (120, 80, 80)
+                    pygame.draw.rect(screen, color,
+                        (col*TILE_SIZE, row*TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-        # Portes
-        for direction, rect in self.get_door_rects().items():
-            color = (0, 200, 80) if self.cleared else (120, 80, 80)
-            pygame.draw.rect(screen, color, rect)
 
 
 class Map:
@@ -122,22 +204,24 @@ class Map:
         neighbors = {"up": (0,-1), "down": (0,1), "left": (-1,0), "right": (1,0)}
         for (x, y), room in self.rooms.items():
             for direction, (dx, dy) in neighbors.items():
-                if (x + dx, y + dy) in self.rooms:
-                    room.active_doors.add(direction)
+                if (x+dx, y+dy) in self.rooms:
+                    room.add_door(direction)
 
     def change_room(self, dx, dy, player=None):
         if not self.current_room.cleared:
             return False
-        new_pos = (self.current_pos[0] + dx, self.current_pos[1] + dy)
+        new_pos = (self.current_pos[0]+dx, self.current_pos[1]+dy)
         if new_pos in self.rooms:
             self.current_pos = new_pos
             self.current_room = self.rooms[new_pos]
             self.current_room.visited = True
             if player:
-                if dx == 1:  player.rect.left = WALL_THICKNESS + 5
-                if dx == -1: player.rect.right = SCREEN_WIDTH - WALL_THICKNESS - 5
-                if dy == 1:  player.rect.top = WALL_THICKNESS + 5
-                if dy == -1: player.rect.bottom = SCREEN_HEIGHT - WALL_THICKNESS - 5
+                mid_col = COLS // 2
+                mid_row = ROWS // 2
+                if dx == 1:  player.rect.left = TILE_SIZE + 5
+                if dx == -1: player.rect.right = (COLS-1)*TILE_SIZE - 5
+                if dy == 1:  player.rect.top = TILE_SIZE + 5
+                if dy == -1: player.rect.bottom = (ROWS-1)*TILE_SIZE - 5
             return True
         return False
 
@@ -153,7 +237,7 @@ class Map:
         for (x, y), room in self.rooms.items():
             if not room.visited and (x, y) != self.current_pos:
                 is_adjacent = any(
-                    (self.current_pos[0] + dx, self.current_pos[1] + dy) == (x, y)
+                    (self.current_pos[0]+dx, self.current_pos[1]+dy) == (x, y)
                     for dx, dy in [(0,-1),(0,1),(-1,0),(1,0)]
                 )
                 if not is_adjacent:

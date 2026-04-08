@@ -2,12 +2,8 @@ import pygame
 import random
 
 class Enemy:
-    def __init__(self):
-        self.rect = pygame.Rect(
-            random.randint(100, 700),
-            random.randint(100, 500),
-            40, 40
-        )
+    def __init__(self, x=400, y=300):
+        self.rect = pygame.Rect(x - 20, y - 20, 40, 40)
         self.speed = 2
         self.hp = 3
 
