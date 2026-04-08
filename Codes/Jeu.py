@@ -27,18 +27,24 @@ def lancer_jeu():
 
         def move(self, keys, game_map):
             """Déplace le joueur axe par axe avec collisions."""
+            dx, dy = 0, 0
+
+            if keys[pygame.K_a]: dx -= 1
+            if keys[pygame.K_d]: dx += 1
+            if keys[pygame.K_w]: dy -= 1
+            if keys[pygame.K_s]: dy += 1
+
+            # Normalisation : si on bouge en diagonale, on réduit la vitesse
+            if dx != 0 and dy != 0:
+                dx *= 0.7071  # 1 / √2
+                dy *= 0.7071
+
             # Axe horizontal
-            if keys[pygame.K_a]:
-                self.rect.x -= self.speed
-            if keys[pygame.K_d]:
-                self.rect.x += self.speed
+            self.rect.x += dx * self.speed
             self._resolve_collisions(game_map, axis="x")
 
             # Axe vertical
-            if keys[pygame.K_w]:
-                self.rect.y -= self.speed
-            if keys[pygame.K_s]:
-                self.rect.y += self.speed
+            self.rect.y += dy * self.speed
             self._resolve_collisions(game_map, axis="y")
 
         def _resolve_collisions(self, game_map, axis):
