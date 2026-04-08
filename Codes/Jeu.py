@@ -1,6 +1,6 @@
 import pygame
 import sys
-from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH, DOOR_THICKNESS
+from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH
 
 def lancer_jeu():
     """Lance le jeu principal."""
@@ -21,50 +21,60 @@ def lancer_jeu():
 
     class Player:
         def __init__(self):
-            """Initialise le joueur avec une position et une vitesse."""
             self.rect = pygame.Rect(400, 300, 40, 40)
             self.speed = 5
+            self.hp = 5
 
-        def move(self, keys):
-            """Déplace le joueur selon les touches pressées."""
-            if keys[pygame.K_w]:
-                self.rect.y -= self.speed
-            if keys[pygame.K_s]:
-                self.rect.y += self.speed
+        def move(self, keys, game_map):
+            """Déplace le joueur axe par axe avec collisions."""
+            # Axe horizontal
             if keys[pygame.K_a]:
                 self.rect.x -= self.speed
             if keys[pygame.K_d]:
                 self.rect.x += self.speed
-        def collide_walls(self, current_room):
-            """Empêche le joueur de traverser les murs et les portes fermées."""
-            if self.rect.left < 0:
-                self.rect.left = 0
-            if self.rect.right > SCREEN_WIDTH:
-                self.rect.right = SCREEN_WIDTH
-            if self.rect.top < 0:
-                self.rect.top = 0
-            if self.rect.bottom > SCREEN_HEIGHT:
-                self.rect.bottom = SCREEN_HEIGHT
+            self._resolve_collisions(game_map, axis="x")
 
-            # Bloque les portes fermées ou inexistantes
-            for direction, door_rect in current_room.doors.items():
-                # Porte inactive (mur) ou porte active mais salle non vidée
-                is_blocked = (
-                    direction not in current_room.active_doors or
-                    not current_room.cleared
-                )
-                if is_blocked and self.rect.colliderect(door_rect):
-                    if direction == "up":
-                        self.rect.top = door_rect.bottom
-                    elif direction == "down":
-                        self.rect.bottom = door_rect.top
-                    elif direction == "left":
-                        self.rect.left = door_rect.right
-                    elif direction == "right":
-                        self.rect.right = door_rect.left
+            # Axe vertical
+            if keys[pygame.K_w]:
+                self.rect.y -= self.speed
+            if keys[pygame.K_s]:
+                self.rect.y += self.speed
+            self._resolve_collisions(game_map, axis="y")
 
+        def _resolve_collisions(self, game_map, axis):
+            current_room = game_map.current_room
+
+            for wall_rect in current_room.get_wall_rects():
+                if self.rect.colliderect(wall_rect):
+                    if axis == "x":
+                        if self.rect.centerx < wall_rect.centerx:
+                            self.rect.right = wall_rect.left
+                        else:
+                            self.rect.left = wall_rect.right
+                    elif axis == "y":
+                        if self.rect.centery < wall_rect.centery:
+                            self.rect.bottom = wall_rect.top
+                        else:
+                            self.rect.top = wall_rect.bottom
+
+            for direction, door_rect in current_room.get_door_rects().items():
+                if self.rect.colliderect(door_rect):
+                    if current_room.cleared:
+                        dx, dy = current_room.door_directions[direction]
+                        game_map.change_room(dx, dy, self)
+                        return
+                    else:
+                        if axis == "x":
+                            if self.rect.centerx < door_rect.centerx:
+                                self.rect.right = door_rect.left
+                            else:
+                                self.rect.left = door_rect.right
+                        elif axis == "y":
+                            if self.rect.centery < door_rect.centery:
+                                self.rect.bottom = door_rect.top
+                            else:
+                                self.rect.top = door_rect.bottom
         def draw(self):
-            """Dessine le joueur sur l'écran."""
             pygame.draw.rect(screen, BLUE, self.rect)
 
     class Bullet:
@@ -104,8 +114,7 @@ def lancer_jeu():
             if event.type == pygame.QUIT:
                 running = False
 
-        player.move(keys)
-
+        player.move(keys, game_map)
         
         if shoot_cooldown > 0:
             shoot_cooldown -= 1
