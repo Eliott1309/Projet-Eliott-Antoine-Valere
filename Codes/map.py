@@ -162,9 +162,10 @@ class Room:
 
     def update(self, player):
         if not self.cleared:
+            wall_rects = self.get_wall_rects()
             for enemy in self.enemies:
                 if enemy.hp > 0:
-                    enemy.update(player)
+                    enemy.update(player, wall_rects)
             if all(e.hp <= 0 for e in self.enemies):
                 self.cleared = True
 

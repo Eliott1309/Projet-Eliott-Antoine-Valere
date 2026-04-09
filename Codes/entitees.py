@@ -7,15 +7,32 @@ class Enemy:
         self.speed = 2
         self.hp = 3
 
-    def update(self, player):
-        if player.rect.x < self.rect.x:
-            self.rect.x -= self.speed
-        if player.rect.x > self.rect.x:
-            self.rect.x += self.speed
-        if player.rect.y < self.rect.y:
-            self.rect.y -= self.speed
-        if player.rect.y > self.rect.y:
-            self.rect.y += self.speed
+    def update(self, player, wall_rects=None):
+        dx = 0
+        dy = 0
+
+        if player.rect.x < self.rect.x: dx = -1
+        if player.rect.x > self.rect.x: dx = 1
+        if player.rect.y < self.rect.y: dy = -1
+        if player.rect.y > self.rect.y: dy = 1
+
+        if wall_rects:
+            # Axe X
+            self.rect.x += dx * self.speed
+            for wall in wall_rects:
+                if self.rect.colliderect(wall):
+                    if dx > 0: self.rect.right = wall.left
+                    else:      self.rect.left  = wall.right
+
+            # Axe Y
+            self.rect.y += dy * self.speed
+            for wall in wall_rects:
+                if self.rect.colliderect(wall):
+                    if dy > 0: self.rect.bottom = wall.top
+                    else:      self.rect.top    = wall.bottom
+        else:
+            self.rect.x += dx * self.speed
+            self.rect.y += dy * self.speed
 
     def draw(self, screen):
         pygame.draw.rect(screen, (200, 50, 50), self.rect)

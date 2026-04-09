@@ -147,6 +147,16 @@ def lancer_jeu():
                 bullets.remove(bullet)
                 continue
 
+            wall_rects = game_map.current_room.get_wall_rects()
+            hit_wall = False
+            for wall in wall_rects:
+                if bullet.rect.colliderect(wall):
+                    hit_wall = True
+                    break
+            if hit_wall:
+                bullets.remove(bullet)
+                continue
+
             for enemy in game_map.current_room.enemies:
                 if enemy.hp > 0 and bullet.rect.colliderect(enemy.rect):
                     bullets.remove(bullet)

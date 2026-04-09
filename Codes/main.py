@@ -18,10 +18,10 @@ pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu
 
 #resssources
 '''permet de mettre les images, musiques etc en fond'''
-background = pygame.image.load(r"C:\Users\User\Documents\Projet-Eliott-Antoine-Valere\Assets\bg.jpeg") #mettre une image de fond
+background = pygame.image.load(r"C:\Users\User\Downloads\Projet-Eliott-Antoine-Valere\Assets\bg.jpeg") #mettre une image de fond
 background = pygame.transform.scale(background, (WIDTH, HEIGHT)) #redimensionner image de fond
 
-pygame.mixer.music.load(r"C:\Users\User\Documents\Projet-Eliott-Antoine-Valere\Assets\music.mp3")
+pygame.mixer.music.load(r"C:\Users\User\Downloads\Projet-Eliott-Antoine-Valere\Assets\music.mp3")
 pygame.mixer.music.play(-1) #musique de fond en boucle
 
 #couleurs
