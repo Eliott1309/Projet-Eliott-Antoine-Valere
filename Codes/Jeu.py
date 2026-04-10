@@ -24,9 +24,33 @@ def lancer_jeu():
             self.rect = pygame.Rect(400, 300, 40, 40)
             self.speed = 5
             self.hp = 5
+            self.max_hp = 5
+            self.invincible_timer = 0  # frames d'invincibilité après un coup
+
+        def take_damage(self, amount=1):
+            if self.invincible_timer == 0:
+                self.hp -= amount
+                self.invincible_timer = 60  # 1 seconde d'invincibilité
+
+        def is_alive(self):
+            return self.hp > 0
+
+        def draw_hp_bar(self, surface):
+            """Dessine la barre de vie en haut à gauche."""
+            BAR_X, BAR_Y = 10, 10
+            BAR_W, BAR_H = 200, 20
+            HEART_SIZE = 20
+            PADDING = 4
+
+            for i in range(self.max_hp):
+                x = BAR_X + i * (HEART_SIZE + PADDING)
+                color = (220, 50, 50) if i < self.hp else (80, 80, 80)
+                pygame.draw.rect(surface, color, (x, BAR_Y, HEART_SIZE, HEART_SIZE), border_radius=4)
+                pygame.draw.rect(surface, (255, 255, 255), (x, BAR_Y, HEART_SIZE, HEART_SIZE), 1, border_radius=4)
 
         def move(self, keys, game_map):
-            """Déplace le joueur axe par axe avec collisions."""
+            if self.invincible_timer > 0:
+                self.invincible_timer -= 1
             dx, dy = 0, 0
 
             if keys[pygame.K_a]: dx -= 1
@@ -36,7 +60,7 @@ def lancer_jeu():
 
             # Normalisation : si on bouge en diagonale, on réduit la vitesse
             if dx != 0 and dy != 0:
-                dx *= 0.7071  # 1 / √2
+                dx *= 0.7071  
                 dy *= 0.7071
 
             # Axe horizontal
@@ -165,7 +189,18 @@ def lancer_jeu():
 
         
         game_map.update(player)
-        game_map.draw(screen)  
+                # Collision joueur / ennemis → dégâts
+        for enemy in game_map.current_room.enemies:
+            if enemy.hp > 0 and player.rect.colliderect(enemy.rect):
+                player.take_damage(1)
+
+        # Mort du joueur
+        if not player.is_alive():
+            print("Game Over")
+            running = False
+
+        game_map.draw(screen) 
+        player.draw_hp_bar(screen)
 
         
         player.draw()
