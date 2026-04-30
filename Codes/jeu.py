@@ -35,6 +35,13 @@ def lancer_jeu():
         def is_alive(self):
             return self.hp > 0
 
+        def apply_item(self, item_type):
+            if item_type == "heart":
+                self.hp = min(self.max_hp, self.hp + 1)
+            elif item_type == "speed":
+                self.speed += 1
+
+
         def draw_hp_bar(self, surface):
             """Dessine la barre de vie en haut à gauche."""
             BAR_X, BAR_Y = 10, 10
@@ -189,7 +196,13 @@ def lancer_jeu():
 
         
         game_map.update(player)
-                # Collision joueur / ennemis → dégâts
+
+        for item in game_map.current_room.items[:]:
+            if player.rect.colliderect(item.rect):
+                player.apply_item(item.type)
+                game_map.current_room.items.remove(item)
+
+        # Collision joueur / ennemis → dégâts
         for enemy in game_map.current_room.enemies:
             if enemy.hp > 0 and player.rect.colliderect(enemy.rect):
                 player.take_damage(1)

@@ -78,6 +78,17 @@ ROOM_TEMPLATES = [
     make_croix,       
 ]
 
+class Item:
+    def __init__(self, x, y, item_type):
+        self.rect = pygame.Rect(x - 14, y - 14, 28, 28)
+        self.type = item_type
+
+    def draw(self, screen):
+        if self.type == "heart":
+            pygame.draw.rect(screen, (220, 40, 70), self.rect, border_radius=8)
+        elif self.type == "speed":
+            pygame.draw.ellipse(screen, (80, 210, 255), self.rect)
+
 
 class Room:
     def __init__(self, x, y):
@@ -86,6 +97,10 @@ class Room:
         self.active_doors = set()
         self.visited = False
         self.cleared = False
+        self.items = []
+        self.reward_spawned = False
+
+
 
         # Choix aléatoire du template
         self.grid = random.choice(ROOM_TEMPLATES)()
@@ -168,9 +183,17 @@ class Room:
                     enemy.update(player, wall_rects)
             if all(e.hp <= 0 for e in self.enemies):
                 self.cleared = True
+                if not self.reward_spawned:
+                    self.reward_spawned = True
+                    item_type = random.choice(["heart", "speed"])
+                    self.items.append(Item(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, item_type))
+
 
     def draw(self, screen):
         self._draw_tiles(screen)
+        for item in self.items:
+            item.draw(screen)
+
         for enemy in self.enemies:
             if enemy.hp > 0:
                 enemy.draw(screen)
