@@ -2,7 +2,7 @@ import pygame
 import sys
 from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH
 
-def lancer_jeu():
+def lancer_jeu(keyboard_layout="azerty"):
     """Lance le jeu principal."""
     pygame.init()
 
@@ -28,6 +28,7 @@ def lancer_jeu():
             self.hp = 5
             self.max_hp = 5
             self.invincible_timer = 0  # frames d'invincibilité après un coup
+            self.inventory = []
 
         def take_damage(self, amount=1):
             if self.invincible_timer == 0:
@@ -42,6 +43,7 @@ def lancer_jeu():
                 self.hp = min(self.max_hp, self.hp + 1)
             elif item_type == "speed":
                 self.speed += 1
+
 
 
         def draw_hp_bar(self, surface):
@@ -62,10 +64,18 @@ def lancer_jeu():
                 self.invincible_timer -= 1
             dx, dy = 0, 0
 
-            if keys[pygame.K_a]: dx -= 1
+            if keyboard_layout == "azerty":
+                left_key = pygame.K_q
+                up_key = pygame.K_z
+            else:
+                left_key = pygame.K_a
+                up_key = pygame.K_w
+
+            if keys[left_key]: dx -= 1
             if keys[pygame.K_d]: dx += 1
-            if keys[pygame.K_w]: dy -= 1
+            if keys[up_key]: dy -= 1
             if keys[pygame.K_s]: dy += 1
+
 
             # Normalisation : si on bouge en diagonale, on réduit la vitesse
             if dx != 0 and dy != 0:
@@ -115,6 +125,23 @@ def lancer_jeu():
                                 self.rect.top = door_rect.bottom
         def draw(self):
             pygame.draw.rect(screen, BLUE, self.rect)
+        def draw_inventory(self, surface):
+            slot_size = 30
+            spacing = 5
+            slots = 5
+
+            start_x = 10
+            y = 562
+
+            for i in range(slots):
+                x = start_x + i * (slot_size + spacing)
+
+                slot_rect = pygame.Rect(x, y, slot_size, slot_size)
+
+                pygame.draw.rect(surface, (40, 40, 45), slot_rect, border_radius=6)
+                pygame.draw.rect(surface, (220, 220, 220), slot_rect, 2, border_radius=6)
+
+
 
     class Bullet:
         def __init__(self, x, y, dx, dy):
@@ -237,7 +264,7 @@ def lancer_jeu():
 
         game_map.draw(screen) 
         player.draw_hp_bar(screen)
-
+        player.draw_inventory(screen)
         
         player.draw()
 
@@ -245,7 +272,8 @@ def lancer_jeu():
             bullet.draw()
 
         pygame.display.flip()
-    
+        
+
     
     
     pygame.quit()

@@ -77,12 +77,21 @@ buttons = [
     Button("Options", 480, "options"),
     Button("Quitter", 560, "quit")
 ]
+option_buttons = [
+    Button("Changer clavier", 390, "switch_layout"),
+    Button("Retour", 500, "back")
+]
+
+
 
 
 #boucle principale du menu
 
 running = True
 clock = pygame.time.Clock()
+keyboard_layout = "azerty"
+menu_state = "main"
+
 
 while running:
     clock.tick(60)
@@ -97,21 +106,42 @@ while running:
     screen.blit(title, (WIDTH//2 - title.get_width()//2 , 100)) #affichage du texte principal
 
     #je definis ce que font les boutons
-    for btn in buttons:
-        btn.draw(screen, mouse_pos)
-        if btn.is_clicked(mouse_pos, mouse_pressed):
-            pygame.time.delay(200)
-            if btn.action == "new":
-                print("Nouvelle Partie")
-                running = False
-                pygame.quit()
-                lancer_jeu()
-            elif btn.action == "load":
-                print("Charger Partie")
-            elif btn.action == "options":
-                print("Options")
-            elif btn.action == "quit":
-                running = False
+    if menu_state == "main":
+        for btn in buttons:
+            btn.draw(screen, mouse_pos)
+            if btn.is_clicked(mouse_pos, mouse_pressed):
+                pygame.time.delay(200)
+                if btn.action == "new":
+                    print("Nouvelle Partie")
+                    running = False
+                    pygame.quit()
+                    lancer_jeu(keyboard_layout)
+                elif btn.action == "load":
+                    print("Charger Partie")
+                elif btn.action == "options":
+                    menu_state = "options"
+                elif btn.action == "quit":
+                    running = False
+
+    elif menu_state == "options":
+        option_title = FONT_BUTTON.render("Options", True, WHITE)
+        screen.blit(option_title, (WIDTH//2 - option_title.get_width()//2, 250))
+
+        current = FONT_BUTTON.render("Clavier : " + keyboard_layout.upper(), True, WHITE)
+        screen.blit(current, (WIDTH//2 - current.get_width()//2, 310))
+
+        for btn in option_buttons:
+            btn.draw(screen, mouse_pos)
+            if btn.is_clicked(mouse_pos, mouse_pressed):
+                pygame.time.delay(200)
+                if btn.action == "switch_layout":
+                    if keyboard_layout == "azerty":
+                        keyboard_layout = "qwerty"
+                    else:
+                        keyboard_layout = "azerty"
+                elif btn.action == "back":
+                    menu_state = "main"
+
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
