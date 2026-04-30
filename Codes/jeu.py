@@ -12,6 +12,8 @@ def lancer_jeu():
     pygame.display.set_caption("Mini Isaac")
 
     clock = pygame.time.Clock()
+    font_game_over = pygame.font.Font(None, 80)
+    font_restart = pygame.font.Font(None, 36)
 
     # Couleurs
     WHITE = (255, 255, 255)
@@ -209,8 +211,29 @@ def lancer_jeu():
 
         # Mort du joueur
         if not player.is_alive():
-            print("Game Over")
-            running = False
+            screen.fill(BLACK)
+
+            game_over_text = font_game_over.render("GAME OVER", True, RED)
+            game_over_rect = game_over_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 40))
+            screen.blit(game_over_text, game_over_rect)
+
+            restart_text = font_restart.render("Appuie sur ECHAP pour quitter", True, WHITE)
+            restart_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 30))
+            screen.blit(restart_text, restart_rect)
+
+            pygame.display.flip()
+
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        waiting = False
+                        running = False
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            waiting = False
+                            running = False
+            continue
 
         game_map.draw(screen) 
         player.draw_hp_bar(screen)
