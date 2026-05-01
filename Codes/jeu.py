@@ -33,6 +33,9 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             self.attack_rect = None
             self.attack_timer = 0
             self.attack_direction = None
+            self.footstep_timer = 0
+            self.footstep_channel = None
+
 
 
 
@@ -104,6 +107,17 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             if keys[pygame.K_d]: dx += 1
             if keys[up_key]: dy -= 1
             if keys[pygame.K_s]: dy += 1
+
+
+            #joue le son de pas seulement s'il n'est pas déjà lancé
+            if dx != 0 or dy != 0:
+                if self.footstep_channel is None or not self.footstep_channel.get_busy():
+                    self.footstep_channel = assets["footstep"].play()
+            else:
+                if self.footstep_channel is not None:
+                    self.footstep_channel.stop()
+                    self.footstep_channel = None
+
 
 
             # Normalisation : si on bouge en diagonale, on réduit la vitesse

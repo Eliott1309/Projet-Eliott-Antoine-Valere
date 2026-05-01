@@ -33,4 +33,8 @@ def load_assets():
     assets["chest"] = pygame.transform.scale(assets["chest"], (36, 36))
     assets["sword"] = pygame.transform.scale(assets["sword"], (30, 30))
     assets["crossbow"] = pygame.transform.scale(assets["crossbow"], (30, 30))
+
+    assets["footstep"] = pygame.mixer.Sound(os.path.join(base, "assets", "footstep.wav"))
+    assets["footstep"].set_volume(0.1)
+
     return assets
