@@ -42,7 +42,7 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             if item_type == "heart":
                 self.hp = min(self.max_hp, self.hp + 1)
             elif item_type == "speed":
-                self.speed += 1
+                self.speed += 0.5
 
 
 

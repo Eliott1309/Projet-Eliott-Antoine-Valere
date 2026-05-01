@@ -190,8 +190,12 @@ class Room:
 
 
     def draw(self, screen, assets):
-         self._draw_tiles(screen, assets)
-         for enemy in self.enemies:
+        self._draw_tiles(screen, assets)
+              
+        for item in self.items:
+            item.draw(screen)
+
+        for enemy in self.enemies:
             if enemy.hp > 0:
                 enemy.draw(screen, assets)
 
