@@ -32,6 +32,8 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             self.weapon = None
             self.attack_rect = None
             self.attack_timer = 0
+            self.attack_direction = None
+
 
 
         def take_damage(self, amount=1):
@@ -153,7 +155,22 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         def draw(self):
             screen.blit(assets["player"], self.rect)
             if self.attack_timer > 0 and self.attack_rect is not None:
-                pygame.draw.rect(screen, (230, 230, 230), self.attack_rect, 2)
+                #affiche un petit arc pour l'attaque de l'épée
+                slash = pygame.Surface((70, 70), pygame.SRCALPHA)
+                color = (240, 240, 255, 180)
+
+                if self.attack_direction == (1, 0):
+                    pygame.draw.arc(slash, color, (10, 10, 50, 50), -1.2, 1.2, 4)
+                    screen.blit(slash, (self.rect.right - 20, self.rect.centery - 35))
+                elif self.attack_direction == (-1, 0):
+                    pygame.draw.arc(slash, color, (10, 10, 50, 50), 1.9, 4.4, 4)
+                    screen.blit(slash, (self.rect.left - 50, self.rect.centery - 35))
+                elif self.attack_direction == (0, -1):
+                    pygame.draw.arc(slash, color, (10, 10, 50, 50), 0.3, 2.8, 4)
+                    screen.blit(slash, (self.rect.centerx - 35, self.rect.top - 50))
+                elif self.attack_direction == (0, 1):
+                    pygame.draw.arc(slash, color, (10, 10, 50, 50), 3.4, 5.9, 4)
+                    screen.blit(slash, (self.rect.centerx - 35, self.rect.bottom - 20))
 
 
         # affiche les cases de l'inventaire en bas de l'écran
@@ -174,13 +191,18 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                 pygame.draw.rect(surface, (220, 220, 220), slot_rect, 2, border_radius=6)
                 if i == 0 and self.weapon is not None:
                     surface.blit(assets[self.weapon], slot_rect)
-                if i < len(self.inventory):
-                    if self.inventory[i] == "heart":
+
+                item_index = i - 1
+
+                if i > 0 and item_index < len(self.inventory):
+                    if self.inventory[item_index] == "heart":
                         heart_rect = pygame.Rect(x + 8, y + 8, slot_size - 16, slot_size - 16)
                         pygame.draw.rect(surface, (220, 40, 70), heart_rect, border_radius=6)
+
         
         #crée une zone d'attaque courte pour l'épée
         def sword_attack(self, dx, dy, enemies):
+            self.attack_direction = (dx, dy)
             attack_size = 45
 
             if dx == 1:
@@ -238,18 +260,17 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             if event.type == pygame.QUIT:
                 running = False
 
-            #utilise un objet selon la touche 1 à 5
+            #utilise un objet selon la touche 2 à 5
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
+                if event.key == pygame.K_2:
                     player.use_inventory_item(0)
-                elif event.key == pygame.K_2:
-                    player.use_inventory_item(1)
                 elif event.key == pygame.K_3:
-                    player.use_inventory_item(2)
+                    player.use_inventory_item(1)
                 elif event.key == pygame.K_4:
-                    player.use_inventory_item(3)
+                    player.use_inventory_item(2)
                 elif event.key == pygame.K_5:
-                    player.use_inventory_item(4)
+                    player.use_inventory_item(3)
+
 
 
         player.move(keys, game_map)
