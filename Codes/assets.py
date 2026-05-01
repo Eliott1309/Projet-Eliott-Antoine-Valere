@@ -26,4 +26,11 @@ def load_assets():
     assets["heart"] = pygame.transform.scale(assets["heart"], (25, 25))
     assets["speed"] = pygame.transform.scale(assets["speed"], (25, 25))
 
+    assets["chest"] = pygame.image.load(os.path.join(base, "assets", "chest.png")).convert_alpha()
+    assets["sword"] = pygame.image.load(os.path.join(base, "assets", "sword.png")).convert_alpha()
+    assets["crossbow"] = pygame.image.load(os.path.join(base, "assets", "crossbow.png")).convert_alpha()
+
+    assets["chest"] = pygame.transform.scale(assets["chest"], (36, 36))
+    assets["sword"] = pygame.transform.scale(assets["sword"], (30, 30))
+    assets["crossbow"] = pygame.transform.scale(assets["crossbow"], (30, 30))
     return assets

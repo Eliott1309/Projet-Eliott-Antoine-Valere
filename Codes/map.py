@@ -89,6 +89,25 @@ class Item:
         elif self.type == "speed":
             screen.blit(assets["speed"], self.rect)
 
+#représente le coffre de la première salle
+class Chest:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x - 18, y - 18, 36, 36)
+        self.opened = False
+        self.open_timer = 0
+
+    #affiche le coffre tant qu'il n'est pas ouvert
+    def draw(self, screen, assets):
+        if not self.opened:
+            screen.blit(assets["chest"], self.rect)
+
+    #donne une arme au hasard
+    def open(self):
+        self.opened = True
+        if random.random() < 0.6:
+            return "sword"
+        else:
+            return "crossbow"
 
 
 
@@ -101,6 +120,10 @@ class Room:
         self.cleared = False
         self.items = []
         self.reward_spawned = False
+        self.chest = None
+
+        if self.x == 0 and self.y == 0:
+            self.chest = Chest(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80)
 
 
 
@@ -193,7 +216,10 @@ class Room:
 
     def draw(self, screen, assets):
         self._draw_tiles(screen, assets)
-              
+         
+        if self.chest is not None:
+            self.chest.draw(screen, assets)
+             
         for item in self.items:
             item.draw(screen, assets)
 
