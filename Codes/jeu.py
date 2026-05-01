@@ -176,12 +176,13 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
 
 
     class Bullet:
-        def __init__(self, x, y, dx, dy):
+        def __init__(self, x, y, dx, dy, damage=1):
             """Initialise la balle avec une position et une direction."""
             self.rect = pygame.Rect(x, y, 10, 10)
             self.dx = dx
             self.dy = dy
             self.speed = 8
+            self.damage = damage
 
         def update(self):
             """Met à jour la position de la balle."""
@@ -232,18 +233,26 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             shoot_cooldown -= 1
 
         if shoot_cooldown == 0:
+            damage = 1
+            cooldown = 10
+
+            #l'arbalète tire lentement mais tue instantanément
+            if player.weapon == "crossbow":
+                damage = 999
+                cooldown = 90
+
             if keys[pygame.K_i]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, -1))
-                shoot_cooldown = 10
+                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, -1, damage))
+                shoot_cooldown = cooldown
             elif keys[pygame.K_k]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, 1))
-                shoot_cooldown = 10
+                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, 1, damage))
+                shoot_cooldown = cooldown
             elif keys[pygame.K_j]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, -1, 0))
-                shoot_cooldown = 10
+                bullets.append(Bullet(player.rect.centerx, player.rect.centery, -1, 0, damage))
+                shoot_cooldown = cooldown
             elif keys[pygame.K_l]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 1, 0))
-                shoot_cooldown = 10
+                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 1, 0, damage))
+                shoot_cooldown = cooldown
 
         
         for bullet in bullets[:]:
@@ -266,7 +275,7 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             for enemy in game_map.current_room.enemies:
                 if enemy.hp > 0 and bullet.rect.colliderect(enemy.rect):
                     bullets.remove(bullet)
-                    enemy.hp -= 1
+                    enemy.hp -= bullet.damage
                     break
 
         
