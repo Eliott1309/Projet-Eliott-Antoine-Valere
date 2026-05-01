@@ -30,6 +30,9 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             self.invincible_timer = 0  # frames d'invincibilité après un coup
             self.inventory = []
             self.weapon = None
+            self.attack_rect = None
+            self.attack_timer = 0
+
 
         def take_damage(self, amount=1):
             if self.invincible_timer == 0:
@@ -149,7 +152,10 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                                 self.rect.top = door_rect.bottom
         def draw(self):
             screen.blit(assets["player"], self.rect)
-        
+            if self.attack_timer > 0 and self.attack_rect is not None:
+                pygame.draw.rect(screen, (230, 230, 230), self.attack_rect, 2)
+
+
         # affiche les cases de l'inventaire en bas de l'écran
         def draw_inventory(self, surface, assets):
             slot_size = 30
@@ -172,6 +178,25 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                     if self.inventory[i] == "heart":
                         heart_rect = pygame.Rect(x + 8, y + 8, slot_size - 16, slot_size - 16)
                         pygame.draw.rect(surface, (220, 40, 70), heart_rect, border_radius=6)
+        
+        #crée une zone d'attaque courte pour l'épée
+        def sword_attack(self, dx, dy, enemies):
+            attack_size = 45
+
+            if dx == 1:
+                self.attack_rect = pygame.Rect(self.rect.right, self.rect.centery - 15, attack_size, 30)
+            elif dx == -1:
+                self.attack_rect = pygame.Rect(self.rect.left - attack_size, self.rect.centery - 15, attack_size, 30)
+            elif dy == 1:
+                self.attack_rect = pygame.Rect(self.rect.centerx - 15, self.rect.bottom, 30, attack_size)
+            elif dy == -1:
+                self.attack_rect = pygame.Rect(self.rect.centerx - 15, self.rect.top - attack_size, 30, attack_size)
+
+            self.attack_timer = 6
+
+            for enemy in enemies:
+                if enemy.hp > 0 and self.attack_rect.colliderect(enemy.rect):
+                    enemy.hp -= 1
 
 
 
@@ -229,30 +254,40 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
 
         player.move(keys, game_map)
         
+        if player.attack_timer > 0:
+            player.attack_timer -= 1
+
         if shoot_cooldown > 0:
             shoot_cooldown -= 1
 
         if shoot_cooldown == 0:
-            damage = 1
-            cooldown = 10
-
-            #l'arbalète tire lentement mais tue instantanément
-            if player.weapon == "crossbow":
-                damage = 999
-                cooldown = 90
+            dx, dy = 0, 0
 
             if keys[pygame.K_i]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, -1, damage))
-                shoot_cooldown = cooldown
+                dx, dy = 0, -1
             elif keys[pygame.K_k]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 0, 1, damage))
-                shoot_cooldown = cooldown
+                dx, dy = 0, 1
             elif keys[pygame.K_j]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, -1, 0, damage))
-                shoot_cooldown = cooldown
+                dx, dy = -1, 0
             elif keys[pygame.K_l]:
-                bullets.append(Bullet(player.rect.centerx, player.rect.centery, 1, 0, damage))
-                shoot_cooldown = cooldown
+                dx, dy = 1, 0
+
+            if dx != 0 or dy != 0:
+                if player.weapon == "sword":
+                    player.sword_attack(dx, dy, game_map.current_room.enemies)
+                    shoot_cooldown = 15
+                else:
+                    damage = 1
+                    cooldown = 10
+
+                    #l'arbalète tire lentement mais tue instantanément
+                    if player.weapon == "crossbow":
+                        damage = 999
+                        cooldown = 90
+
+                    bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy, damage))
+                    shoot_cooldown = cooldown
+
 
         
         for bullet in bullets[:]:
