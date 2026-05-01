@@ -2,7 +2,7 @@ import pygame
 import sys
 from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH
 
-def lancer_jeu(keyboard_layout="azerty"):
+def lancer_jeu(keyboard_layout="azerty",assets=None):
     """Lance le jeu principal."""
     pygame.init()
 
@@ -124,7 +124,8 @@ def lancer_jeu(keyboard_layout="azerty"):
                             else:
                                 self.rect.top = door_rect.bottom
         def draw(self):
-            pygame.draw.rect(screen, BLUE, self.rect)
+            screen.blit(assets["player"], self.rect)
+        
         def draw_inventory(self, surface):
             slot_size = 30
             spacing = 5
@@ -262,7 +263,7 @@ def lancer_jeu(keyboard_layout="azerty"):
                             running = False
             continue
 
-        game_map.draw(screen) 
+        game_map.draw(screen, assets) 
         player.draw_hp_bar(screen)
         player.draw_inventory(screen)
         

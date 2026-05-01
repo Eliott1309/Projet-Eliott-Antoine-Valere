@@ -189,26 +189,25 @@ class Room:
                     self.items.append(Item(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, item_type))
 
 
-    def draw(self, screen):
-        self._draw_tiles(screen)
-        for item in self.items:
-            item.draw(screen)
-
-        for enemy in self.enemies:
+    def draw(self, screen, assets):
+         self._draw_tiles(screen, assets)
+         for enemy in self.enemies:
             if enemy.hp > 0:
-                enemy.draw(screen)
+                enemy.draw(screen, assets)
 
-    def _draw_tiles(self, screen):
+    def _draw_tiles(self, screen, assets):
         for row in range(ROWS):
-            for col in range(COLS):
-                tile = self.grid[row][col]
-                if tile == 1:
-                    pygame.draw.rect(screen, (80, 60, 40),
-                        (col*TILE_SIZE, row*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-                elif tile == 2:
-                    color = (0, 200, 80) if self.cleared else (120, 80, 80)
-                    pygame.draw.rect(screen, color,
-                        (col*TILE_SIZE, row*TILE_SIZE, TILE_SIZE, TILE_SIZE))
+             for col in range(COLS):
+                 tile = self.grid[row][col]
+                 x = col * TILE_SIZE
+                 y = row * TILE_SIZE
+
+                 if tile == 1:
+                     screen.blit(assets["wall"], (x, y))
+                 elif tile == 2:
+                     screen.blit(assets["door"], (x, y))
+                 else:
+                     screen.blit(assets["floor"], (x, y))
 
 
 
@@ -252,8 +251,8 @@ class Map:
     def update(self, player):
         self.current_room.update(player)
 
-    def draw(self, screen):
-        self.current_room.draw(screen)
+    def draw(self, screen, assets):
+        self.current_room.draw(screen, assets)
         self._draw_minimap(screen)
 
     def _draw_minimap(self, screen):

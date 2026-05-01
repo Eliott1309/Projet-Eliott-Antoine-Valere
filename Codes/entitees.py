@@ -34,5 +34,5 @@ class Enemy:
             self.rect.x += dx * self.speed
             self.rect.y += dy * self.speed
 
-    def draw(self, screen):
-        pygame.draw.rect(screen, (200, 50, 50), self.rect)
+    def draw(self, screen, assets):
+        screen.blit(assets["enemy"], self.rect)

@@ -1,35 +1,42 @@
 import pygame
 import sys
 import subprocess
+from assets import load_assets
 from jeu import lancer_jeu
+import os
+base = os.path.dirname(os.path.abspath(__file__))
+
 
 def start():
     lancer_jeu()
 
 pygame.init()
 
-#TEST Eliott
 
 
 #fenetre
 WIDTH, HEIGHT = 1080,720
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu 
 
 #resssources
 '''permet de mettre les images, musiques etc en fond'''
-background = pygame.image.load("../Assets/bg.jpeg") #mettre une image de fond
-background = pygame.transform.scale(background, (WIDTH, HEIGHT)) #redimensionner image de fond
 
-pygame.mixer.music.load("../Assets/music.mp3")
-pygame.mixer.music.play(-1) #musique de fond en boucle
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu 
 
+base = os.path.dirname(os.path.abspath(__file__))  # ← juste avant les ressources
+
+background = pygame.image.load(os.path.join(base, "assets", "bg.jpeg"))
+background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+
+pygame.mixer.music.load(os.path.join(base, "assets", "music.mp3"))
+pygame.mixer.music.play(-1)
 #couleurs
 '''J'initie les couleurs pour que ca soit plus simple de les mettre pour les boutons'''
 WHITE = (255, 255, 255)
 TRANSLUCENT_BLUE = (0, 80, 200, 180)
 HOVER_BLUE = (0,140, 255, 220) 
 SHADOW = (0, 0, 0)
+assets = load_assets()
 
 #polices
 try : 
@@ -115,7 +122,7 @@ while running:
                     print("Nouvelle Partie")
                     running = False
                     pygame.quit()
-                    lancer_jeu(keyboard_layout)
+                    lancer_jeu(keyboard_layout, assets)
                 elif btn.action == "load":
                     print("Charger Partie")
                 elif btn.action == "options":
