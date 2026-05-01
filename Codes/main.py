@@ -16,8 +16,8 @@ pygame.init()
 
 #fenetre
 WIDTH, HEIGHT = 1080,720
-
-#resssources
+#test
+#resssource
 '''permet de mettre les images, musiques etc en fond'''
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
