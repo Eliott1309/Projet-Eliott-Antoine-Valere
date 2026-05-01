@@ -118,6 +118,8 @@ class Room:
         self.active_doors = set()
         self.visited = False
         self.cleared = False
+        if self.x == 0 and self.y == 0:
+            self.cleared = True
         self.items = []
         self.reward_spawned = False
         self.chest = None
@@ -127,9 +129,16 @@ class Room:
 
 
 
-        # Choix aléatoire du template
-        self.grid = random.choice(ROOM_TEMPLATES)()
+
+        #la salle de départ est vide
+        if self.x == 0 and self.y == 0:
+            self.grid = make_empty()
+        else:
+            self.grid = random.choice(ROOM_TEMPLATES)()
+
         self._apply_borders()
+
+
 
         free_tiles = [
             (col * TILE_SIZE + TILE_SIZE // 2, row * TILE_SIZE + TILE_SIZE // 2)
@@ -138,10 +147,13 @@ class Room:
             if self.grid[row][col] == 0
         ]
         self.enemies = []
-        for _ in range(random.randint(1, 3)):
-            if free_tiles:
-                x, y = random.choice(free_tiles)
-                self.enemies.append(Enemy(x, y))
+
+        #la salle de départ contient seulement le coffre
+        if not (self.x == 0 and self.y == 0):
+            for _ in range(random.randint(1, 3)):
+                if free_tiles:
+                    x, y = random.choice(free_tiles)
+                    self.enemies.append(Enemy(x, y))
 
         self.door_directions = {
             "up":    (0, -1),
@@ -257,10 +269,17 @@ class Map:
 
     def _init_active_doors(self):
         neighbors = {"up": (0,-1), "down": (0,1), "left": (-1,0), "right": (1,0)}
+
         for (x, y), room in self.rooms.items():
-            for direction, (dx, dy) in neighbors.items():
-                if (x+dx, y+dy) in self.rooms:
-                    room.add_door(direction)
+            #la salle de départ a une seule porte vers la droite
+            if (x, y) == (0, 0):
+                room.add_door("right")
+            else:
+                for direction, (dx, dy) in neighbors.items():
+                    if (x+dx, y+dy) in self.rooms and (x+dx, y+dy) != (0, 0):
+                        room.add_door(direction)
+
+
 
     def change_room(self, dx, dy, player=None):
         if not self.current_room.cleared:

@@ -16,7 +16,7 @@ pygame.init()
 
 #fenetre
 WIDTH, HEIGHT = 1080,720
-#test
+
 #resssource
 '''permet de mettre les images, musiques etc en fond'''
 

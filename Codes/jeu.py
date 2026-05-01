@@ -2,6 +2,38 @@ import pygame
 import sys
 from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH
 
+#affiche une boîte de dialogue pour les messages importants
+def draw_dialog_box(screen, text, width, height):
+    box_width = 720
+    box_height = 120
+    x = (width - box_width) // 2
+    y = height - box_height - 30
+
+    pygame.draw.rect(screen, (110, 0, 0), (x - 8, y - 8, box_width + 16, box_height + 16))
+    pygame.draw.rect(screen, (230, 70, 20), (x - 3, y - 3, box_width + 6, box_height + 6))
+    pygame.draw.rect(screen, (245, 230, 190), (x, y, box_width, box_height))
+
+    font = pygame.font.Font(None, 28)
+    words = text.split(" ")
+    lines = []
+    current_line = ""
+
+    for word in words:
+        test_line = current_line + word + " "
+        if font.size(test_line)[0] < box_width - 50:
+            current_line = test_line
+        else:
+            lines.append(current_line)
+            current_line = word + " "
+
+    lines.append(current_line)
+
+    for i, line in enumerate(lines[:3]):
+        text_surface = font.render(line, True, (120, 20, 20))
+        screen.blit(text_surface, (x + 30, y + 30 + i * 28))
+
+
+
 def lancer_jeu(keyboard_layout="azerty",assets=None):
     """Lance le jeu principal."""
     pygame.init()
@@ -259,7 +291,10 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
     player = Player()
     bullets = []
     game_map = Map()
-
+    
+    quest_message_timer = 0
+    quest_message = "vous devez sauver la princesse. tuez tous les ennemis dans toutes les salles."
+    
     shoot_cooldown = 0
     running = True
 
@@ -286,8 +321,11 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                     player.use_inventory_item(3)
 
 
-
+        old_pos = game_map.current_pos
         player.move(keys, game_map)
+        if old_pos == (0, 0) and game_map.current_pos != (0, 0):
+            quest_message_timer = 240
+
         
         if player.attack_timer > 0:
             player.attack_timer -= 1
@@ -307,7 +345,8 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             elif keys[pygame.K_l]:
                 dx, dy = 1, 0
 
-            if dx != 0 or dy != 0:
+            if player.weapon is not None and (dx != 0 or dy != 0):
+
                 if player.weapon == "sword":
                     player.sword_attack(dx, dy, game_map.current_room.enemies)
                     shoot_cooldown = 15
@@ -406,6 +445,11 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         player.draw_hp_bar(screen)
         player.draw_inventory(screen, assets)
         
+        if quest_message_timer > 0:
+            draw_dialog_box(screen, quest_message, WIDTH, HEIGHT)
+            quest_message_timer -= 1
+
+
         player.draw()
 
         for bullet in bullets:
