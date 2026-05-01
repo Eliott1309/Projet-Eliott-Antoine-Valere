@@ -37,4 +37,6 @@ def load_assets():
     assets["footstep"] = pygame.mixer.Sound(os.path.join(base, "assets", "footstep.wav"))
     assets["footstep"].set_volume(0.1)
 
+    assets["typewriter"] = pygame.mixer.Sound(os.path.join(base, "assets", "typewriter.mp3"))
+    assets["typewriter"].set_volume(0.25)
     return assets

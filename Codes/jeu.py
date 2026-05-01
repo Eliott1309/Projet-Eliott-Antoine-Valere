@@ -3,7 +3,7 @@ import sys
 from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH
 
 #affiche une boîte de dialogue pour les messages importants
-def draw_dialog_box(screen, text, width, height):
+def draw_dialog_box(screen, text, width, height, text_index):
     box_width = 720
     box_height = 120
     x = (width - box_width) // 2
@@ -14,7 +14,8 @@ def draw_dialog_box(screen, text, width, height):
     pygame.draw.rect(screen, (245, 230, 190), (x, y, box_width, box_height))
 
     font = pygame.font.Font(None, 28)
-    words = text.split(" ")
+    visible_text = text[:text_index]
+    words = visible_text.split(" ")
     lines = []
     current_line = ""
 
@@ -31,6 +32,12 @@ def draw_dialog_box(screen, text, width, height):
     for i, line in enumerate(lines[:3]):
         text_surface = font.render(line, True, (120, 20, 20))
         screen.blit(text_surface, (x + 30, y + 30 + i * 28))
+
+    small_font = pygame.font.Font(None, 22)
+    continue_text = small_font.render("Appuyer sur espace pour continuer", True, (120, 20, 20))
+    continue_rect = continue_text.get_rect(center=(width // 2, y + box_height - 18))
+    screen.blit(continue_text, continue_rect)
+
 
 
 
@@ -292,9 +299,12 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
     bullets = []
     game_map = Map()
     
-    quest_message_timer = 0
-    quest_message = "vous devez sauver la princesse. tuez tous les ennemis dans toutes les salles."
-    
+    quest_transition = False
+    quest_text_index = 0
+    quest_message = "Vous devez sauver la princesse. Tuez d'abord les ennemis dans les salles environnantes avant de pouvoir la retrouver."
+    typewriter_channel = None
+
+
     shoot_cooldown = 0
     running = True
 
@@ -311,6 +321,16 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
 
             #utilise un objet selon la touche 2 à 5
             if event.type == pygame.KEYDOWN:
+                if quest_transition and event.key == pygame.K_SPACE:
+                    if quest_text_index < len(quest_message):
+                        quest_text_index = len(quest_message)
+                        if typewriter_channel is not None:
+                            typewriter_channel.stop()
+                            typewriter_channel = None
+                    else:
+                        quest_transition = False
+
+
                 if event.key == pygame.K_2:
                     player.use_inventory_item(0)
                 elif event.key == pygame.K_3:
@@ -321,10 +341,24 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                     player.use_inventory_item(3)
 
 
+        if quest_transition:
+            if quest_text_index < len(quest_message):
+                quest_text_index += 1
+                if typewriter_channel is None or not typewriter_channel.get_busy():
+                        typewriter_channel = assets["typewriter"].play()
+            else:
+                if typewriter_channel is not None:
+                    typewriter_channel.stop()
+                    typewriter_channel = None
+            draw_dialog_box(screen, quest_message, WIDTH, HEIGHT, quest_text_index)
+            pygame.display.flip()
+            continue
+
         old_pos = game_map.current_pos
         player.move(keys, game_map)
         if old_pos == (0, 0) and game_map.current_pos != (0, 0):
-            quest_message_timer = 240
+            quest_transition = True
+            quest_text_index = 0
 
         
         if player.attack_timer > 0:
@@ -444,10 +478,6 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         game_map.draw(screen, assets) 
         player.draw_hp_bar(screen)
         player.draw_inventory(screen, assets)
-        
-        if quest_message_timer > 0:
-            draw_dialog_box(screen, quest_message, WIDTH, HEIGHT)
-            quest_message_timer -= 1
 
 
         player.draw()
