@@ -38,14 +38,36 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         def is_alive(self):
             return self.hp > 0
 
+        # applique l'effet de l'objet ramassé par le joueur
         def apply_item(self, item_type):
             if item_type == "heart":
-                self.hp = min(self.max_hp, self.hp + 1)
+                if self.hp < self.max_hp:
+                    self.hp = min(self.max_hp, self.hp + 1)
+                    return True
+                elif len(self.inventory) < 5:
+                    self.inventory.append("heart")
+                    return True
+                return False
+
             elif item_type == "speed":
                 self.speed += 0.5
+                return True
+
+        # utilise un objet de l'inventaire selon sa case
+        def use_inventory_item(self, index):
+            if index >= len(self.inventory):
+                return
+
+            item_type = self.inventory[index]
+
+            if item_type == "heart" and self.hp < self.max_hp:
+                self.hp = min(self.max_hp, self.hp + 1)
+                self.inventory.pop(index)
 
 
 
+
+        # affiche la barre de vie du joueur
         def draw_hp_bar(self, surface):
             """Dessine la barre de vie en haut à gauche."""
             BAR_X, BAR_Y = 10, 10
@@ -59,6 +81,7 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                 pygame.draw.rect(surface, color, (x, BAR_Y, HEART_SIZE, HEART_SIZE), border_radius=4)
                 pygame.draw.rect(surface, (255, 255, 255), (x, BAR_Y, HEART_SIZE, HEART_SIZE), 1, border_radius=4)
 
+        # déplace le joueur et gère les collisions avec la salle
         def move(self, keys, game_map):
             if self.invincible_timer > 0:
                 self.invincible_timer -= 1
@@ -126,6 +149,7 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         def draw(self):
             screen.blit(assets["player"], self.rect)
         
+        # affiche les cases de l'inventaire en bas de l'écran
         def draw_inventory(self, surface):
             slot_size = 30
             spacing = 5
@@ -141,6 +165,10 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
 
                 pygame.draw.rect(surface, (40, 40, 45), slot_rect, border_radius=6)
                 pygame.draw.rect(surface, (220, 220, 220), slot_rect, 2, border_radius=6)
+                if i < len(self.inventory):
+                    if self.inventory[i] == "heart":
+                        heart_rect = pygame.Rect(x + 8, y + 8, slot_size - 16, slot_size - 16)
+                        pygame.draw.rect(surface, (220, 40, 70), heart_rect, border_radius=6)
 
 
 
@@ -180,6 +208,20 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            #utilise un objet selon la touche 1 à 5
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    player.use_inventory_item(0)
+                elif event.key == pygame.K_2:
+                    player.use_inventory_item(1)
+                elif event.key == pygame.K_3:
+                    player.use_inventory_item(2)
+                elif event.key == pygame.K_4:
+                    player.use_inventory_item(3)
+                elif event.key == pygame.K_5:
+                    player.use_inventory_item(4)
+
 
         player.move(keys, game_map)
         
@@ -227,10 +269,13 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         
         game_map.update(player)
 
+        #vérifie si le joueur ramasse un objet au sol
         for item in game_map.current_room.items[:]:
             if player.rect.colliderect(item.rect):
-                player.apply_item(item.type)
-                game_map.current_room.items.remove(item)
+                picked = player.apply_item(item.type)
+                if picked:
+                    game_map.current_room.items.remove(item)
+
 
         # Collision joueur / ennemis → dégâts
         for enemy in game_map.current_room.enemies:
