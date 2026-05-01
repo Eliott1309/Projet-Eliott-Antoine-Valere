@@ -83,11 +83,13 @@ class Item:
         self.rect = pygame.Rect(x - 14, y - 14, 28, 28)
         self.type = item_type
 
-    def draw(self, screen):
+    def draw(self, screen, assets):
         if self.type == "heart":
-            pygame.draw.rect(screen, (220, 40, 70), self.rect, border_radius=8)
+            screen.blit(assets["heart"], self.rect)
         elif self.type == "speed":
-            pygame.draw.ellipse(screen, (80, 210, 255), self.rect)
+            screen.blit(assets["speed"], self.rect)
+
+
 
 
 class Room:
@@ -193,7 +195,7 @@ class Room:
         self._draw_tiles(screen, assets)
               
         for item in self.items:
-            item.draw(screen)
+            item.draw(screen, assets)
 
         for enemy in self.enemies:
             if enemy.hp > 0:
