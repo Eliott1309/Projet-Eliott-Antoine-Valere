@@ -68,24 +68,24 @@ class Enemy:
             self.state = "wander"
 
         if self.state == "idle":
-            self.idle()
+            self.ai_idle()
         elif self.state == "alert":
             self.alert_timer -= 1
             if self.alert_timer <= 0:
                 self.state = "chase"
         elif self.state == "chase":
-            self.chase(dx, dy, d, wall_rects)
+            self.ai_chase(dx, dy, d, wall_rects)
         elif self.state == "wander":
-            self.wander(wall_rects)
+            self.ai_wander(wall_rects)
         elif self.state == "patrol":
-            self.patrol(wall_rects)
+            self.ai_patrol(wall_rects)
 
-    def idle(self):
+    def ai_idle(self):
         if random.random() < 0.005:
             self.state        = "wander"
             self.wander_timer = WANDER_CHANGE
 
-    def chase(self, dx, dy, d, wall_rects):
+    def ai_chase(self, dx, dy, d, wall_rects):
         if self.behavior == "chaser":
             self.move(dx, dy, wall_rects)
         elif self.behavior == "cautious":
@@ -99,16 +99,16 @@ class Enemy:
             else:
                 self.move(dx, dy, wall_rects)
 
-    def wander(self, wall_rects):
+    def ai_wander(self, wall_rects):
         self.wander_timer -= 1
         if self.wander_timer <= 0:
             self.wander_dir   = self.random_dir()
             self.wander_timer = WANDER_CHANGE + random.randint(-20, 20)
         self.move(self.wander_dir[0], self.wander_dir[1], wall_rects)
 
-    def patrol(self, wall_rects):
+    def ai_patrol(self, wall_rects):
         if not self.patrol_points:
-            self.wander(wall_rects)
+            self.ai_wander(wall_rects)
             return
         target = self.patrol_points[self.patrol_index]
         dx = target[0] - self.rect.centerx
