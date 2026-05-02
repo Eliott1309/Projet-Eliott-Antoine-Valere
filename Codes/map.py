@@ -89,25 +89,38 @@ class Item:
         elif self.type == "speed":
             screen.blit(assets["speed"], self.rect)
 
-#représente le coffre de la première salle
+#represente un coffre qui peut donner une arme ou un bonus
 class Chest:
-    def __init__(self, x, y):
+    def __init__(self, x, y, chest_type="start"):
         self.rect = pygame.Rect(x - 18, y - 18, 36, 36)
         self.opened = False
         self.open_timer = 0
+        self.chest_type = chest_type
 
     #affiche le coffre tant qu'il n'est pas ouvert
     def draw(self, screen, assets):
         if not self.opened:
             screen.blit(assets["chest"], self.rect)
 
-    #donne une arme au hasard
+    #donne une recompense au hasard
     def open(self):
         self.opened = True
-        if random.random() < 0.6:
-            return "sword"
-        else:
-            return "crossbow"
+
+        if self.chest_type == "start":
+            return random.choice(["sword", "crossbow"])
+
+        rewards = [
+            "damage_boost",
+            "speed_boost",
+            "range_boost",
+            "sword",
+            "crossbow",
+            "bow",
+            "magic_wand"
+        ]
+
+        return random.choice(rewards)
+
 
 
 
@@ -123,6 +136,9 @@ class Room:
         self.items = []
         self.reward_spawned = False
         self.chest = None
+        # Coffres de recompense qui peuvent apparaitre apres une salle terminee
+        self.reward_chests = []
+
 
         if self.x == 0 and self.y == 0:
             self.chest = Chest(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80)
@@ -222,8 +238,14 @@ class Room:
                 self.cleared = True
                 if not self.reward_spawned:
                     self.reward_spawned = True
-                    item_type = random.choice(["heart", "speed"])
-                    self.items.append(Item(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, item_type))
+
+                # Une salle terminee a une chance de faire apparaitre un coffre
+                if random.random() < 0.55:
+                    self.reward_chests.append(Chest(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, "reward"))
+                else:
+                     item_type = random.choice(["heart", "speed"])
+                     self.items.append(Item(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, item_type))
+
 
 
     def draw(self, screen, assets):
@@ -231,6 +253,10 @@ class Room:
          
         if self.chest is not None:
             self.chest.draw(screen, assets)
+        
+        for reward_chest in self.reward_chests:
+            reward_chest.draw(screen, assets)
+
              
         for item in self.items:
             item.draw(screen, assets)

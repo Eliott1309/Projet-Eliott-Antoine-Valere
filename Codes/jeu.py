@@ -1,6 +1,18 @@
 import pygame
 import sys
+import os
 from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH
+
+base = os.path.dirname(os.path.abspath(__file__))
+MEDIEVAL_FONT_PATH = os.path.join(base, "assets", "medieval.ttf")
+
+# Charge une police dans le theme medieval 
+def get_medieval_font(size):
+    try:
+        return pygame.font.Font(MEDIEVAL_FONT_PATH, size)
+    except:
+        return pygame.font.Font(None, size)
+
 
 #affiche une boîte de dialogue pour les messages importants
 def draw_dialog_box(screen, text, width, height, text_index):
@@ -13,7 +25,9 @@ def draw_dialog_box(screen, text, width, height, text_index):
     pygame.draw.rect(screen, (230, 70, 20), (x - 3, y - 3, box_width + 6, box_height + 6))
     pygame.draw.rect(screen, (245, 230, 190), (x, y, box_width, box_height))
 
-    font = pygame.font.Font(None, 28)
+    
+    # Police medievale pour le texte de dialogue
+    font = get_medieval_font(24)
     visible_text = text[:text_index]
     words = visible_text.split(" ")
     lines = []
@@ -33,7 +47,7 @@ def draw_dialog_box(screen, text, width, height, text_index):
         text_surface = font.render(line, True, (120, 20, 20))
         screen.blit(text_surface, (x + 30, y + 30 + i * 28))
 
-    small_font = pygame.font.Font(None, 22)
+    small_font = get_medieval_font(18)
     continue_text = small_font.render("Appuyer sur espace pour continuer", True, (120, 20, 20))
     continue_rect = continue_text.get_rect(center=(width // 2, y + box_height - 18))
     screen.blit(continue_text, continue_rect)
@@ -53,12 +67,47 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
     clock = pygame.time.Clock()
     font_game_over = pygame.font.Font(None, 80)
     font_restart = pygame.font.Font(None, 36)
+    # Polices dans le style medieval du jeu
+    font_game_over = get_medieval_font(80)
+    font_restart = get_medieval_font(32)
+    font_hud = get_medieval_font(24)
+    font_message = get_medieval_font(30)
+
 
     # Couleurs
     WHITE = (255, 255, 255)
     RED = (200, 50, 50)
     BLUE = (50, 100, 255)
     BLACK = (0, 0, 0)
+
+        # Affiche les nouvelles informations du HUD donc score, arme, ennemis restants et messages
+    def draw_extra_hud(surface, player, game_map, score, pickup_message, pickup_message_timer):
+        enemies_left = sum(1 for enemy in game_map.current_room.enemies if enemy.hp > 0)
+
+       
+        weapon_names = {
+            None: "Aucune",
+            "sword": "Epee",
+            "crossbow": "Arbalete",
+            "bow": "Arc",
+            "magic_wand": "Baguette"
+        }
+
+
+        score_text = font_hud.render("Score : " + str(score), True, WHITE)
+        weapon_text = font_hud.render("Arme : " + weapon_names[player.weapon], True, WHITE)
+        enemies_text = font_hud.render("Ennemis restants : " + str(enemies_left), True, WHITE)
+
+        surface.blit(score_text, (10, 38))
+        surface.blit(weapon_text, (10, 66))
+        surface.blit(enemies_text, (10, 94))
+
+        # Le message apparait quelques secondes quand le joueur ramasse un objet
+        if pickup_message_timer > 0:
+            message_surface = font_message.render(pickup_message, True, (255, 230, 120))
+            message_rect = message_surface.get_rect(center=(WIDTH // 2, 45))
+            surface.blit(message_surface, message_rect)
+
 
     class Player:
         def __init__(self):
@@ -69,6 +118,12 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             self.invincible_timer = 0  # frames d'invincibilité après un coup
             self.inventory = []
             self.weapon = None
+            self.weapons = []
+            self.selected_weapon_index = 0
+
+            self.damage_boost = 0   # Bonus obtenus dans les coffres de recompense
+            self.range_boost = 0
+
             self.attack_rect = None
             self.attack_timer = 0
             self.attack_direction = None
@@ -85,8 +140,27 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
 
         def is_alive(self):
             return self.hp > 0
+        
+        # ajoute une arme sans supprimer les anciennes
+        def add_weapon(self, weapon_type):
+            if weapon_type not in self.weapons:
+                self.weapons.append(weapon_type)
 
-        # applique l'effet de l'objet ramassé par le joueur
+            self.weapon = weapon_type
+            self.selected_weapon_index = self.weapons.index(weapon_type)
+
+        # permet de changer d'arme avec la touche 1
+        def switch_weapon(self):
+            if len(self.weapons) == 0:
+                return
+
+            self.selected_weapon_index += 1
+            if self.selected_weapon_index >= len(self.weapons):
+                self.selected_weapon_index = 0
+
+            self.weapon = self.weapons[self.selected_weapon_index]
+
+        # applique l'effet de l'objet ou de la recompense ramassee par le joueur
         def apply_item(self, item_type):
             if item_type == "heart":
                 if self.hp < self.max_hp:
@@ -100,6 +174,24 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             elif item_type == "speed":
                 self.speed += 0.5
                 return True
+
+            elif item_type == "damage_boost":
+                self.damage_boost += 1
+                return True
+
+            elif item_type == "speed_boost":
+                self.speed += 0.75
+                return True
+
+            elif item_type == "range_boost":
+                self.range_boost += 80
+                return True
+
+            elif item_type in ["sword", "crossbow", "bow", "magic_wand"]:
+                self.add_weapon(item_type)
+                return True
+
+
 
         # utilise un objet de l'inventaire selon sa case
         def use_inventory_item(self, index):
@@ -243,7 +335,15 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                 pygame.draw.rect(surface, (40, 40, 45), slot_rect, border_radius=6)
                 pygame.draw.rect(surface, (220, 220, 220), slot_rect, 2, border_radius=6)
                 if i == 0 and self.weapon is not None:
-                    surface.blit(assets[self.weapon], slot_rect)
+                    if self.weapon in assets:
+                        surface.blit(assets[self.weapon], slot_rect)
+                    else:
+                        weapon_letter = self.weapon[0].upper()
+                        small_font = pygame.font.Font(None, 22)
+                        letter = small_font.render(weapon_letter, True, (255, 255, 255))
+                        letter_rect = letter.get_rect(center=slot_rect.center)
+                        surface.blit(letter, letter_rect)
+
 
                 item_index = i - 1
 
@@ -256,7 +356,8 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         #crée une zone d'attaque courte pour l'épée
         def sword_attack(self, dx, dy, enemies):
             self.attack_direction = (dx, dy)
-            attack_size = 45
+            attack_size = 45 + self.range_boost // 4
+
 
             if dx == 1:
                 self.attack_rect = pygame.Rect(self.rect.right, self.rect.centery - 15, attack_size, 30)
@@ -271,33 +372,88 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
 
             for enemy in enemies:
                 if enemy.hp > 0 and self.attack_rect.colliderect(enemy.rect):
-                    enemy.hp -= 1
+                    enemy.hp -= 1 + self.damage_boost
+                    # L'epee repousse les ennemis touches
+                    enemy.rect.x += dx * 25
+                    enemy.rect.y += dy * 25
+
 
 
 
     class Bullet:
-        def __init__(self, x, y, dx, dy, damage=1):
-            """Initialise la balle avec une position et une direction."""
-            self.rect = pygame.Rect(x, y, 10, 10)
+        def __init__(self, x, y, dx, dy, damage=1, max_distance=800, color=WHITE, size=10, pierce=1, magic=False):
+            """Initialise la balle avec une position, une direction et des effets speciaux."""
+            self.rect = pygame.Rect(x, y, size, size)
             self.dx = dx
             self.dy = dy
             self.speed = 8
             self.damage = damage
+            self.max_distance = max_distance
+            self.distance_travelled = 0
+            self.color = color
+            self.pierce = pierce
+            self.magic = magic
+            self.hit_enemies = set()
 
         def update(self):
-            """Met à jour la position de la balle."""
+            """Met a jour la position de la balle."""
             self.rect.x += self.dx * self.speed
             self.rect.y += self.dy * self.speed
+            self.distance_travelled += self.speed
 
         def draw(self):
-            """Dessine la balle sur l'écran."""
-            pygame.draw.rect(screen, WHITE, self.rect)
+            """Dessine la balle sur l'ecran."""
+            pygame.draw.rect(screen, self.color, self.rect)
+
+    
+    
+    class Explosion:
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+            self.radius = 55
+            self.timer = 12
+
+        def update(self):
+            self.timer -= 1
+
+        def draw(self):
+            # Cercle violet temporaire pour montrer l'explosion magique
+            pygame.draw.circle(screen, (170, 90, 255), (self.x, self.y), self.radius, 3)
+    
+
 
     
 
     player = Player()
     bullets = []
+    explosions = []
+
     game_map = Map()
+        # Variables du HUD et du score
+    score = 0
+    counted_dead_enemies = set()
+    pickup_message = ""
+    pickup_message_timer = 0
+
+    # Ajoute des points une seule fois pour chaque ennemi tue
+    def add_score_for_dead_enemies():
+        nonlocal score
+        for enemy in game_map.current_room.enemies:
+            if enemy.hp <= 0 and id(enemy) not in counted_dead_enemies:
+                counted_dead_enemies.add(id(enemy))
+                score += 100
+    
+    # Cree une explosion qui blesse tous les ennemis proches
+    def create_magic_explosion(x, y):
+        explosions.append(Explosion(x, y))
+        explosion_rect = pygame.Rect(x - 55, y - 55, 110, 110)
+
+        for enemy in game_map.current_room.enemies:
+            if enemy.hp > 0 and explosion_rect.colliderect(enemy.rect):
+                enemy.hp -= 2 + player.damage_boost
+
+
     
     quest_transition = False
     quest_text_index = 0
@@ -313,6 +469,11 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         screen.fill(BLACK)
 
         keys = pygame.key.get_pressed()
+               
+        # Diminue le temps d'affichage du message de ramassage
+        if pickup_message_timer > 0:
+            pickup_message_timer -= 1
+
 
 
         for event in pygame.event.get():
@@ -330,8 +491,9 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                     else:
                         quest_transition = False
 
-
-                if event.key == pygame.K_2:
+                if event.key == pygame.K_1:
+                    player.switch_weapon()
+                elif event.key == pygame.K_2:
                     player.use_inventory_item(0)
                 elif event.key == pygame.K_3:
                     player.use_inventory_item(1)
@@ -384,17 +546,39 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                 if player.weapon == "sword":
                     player.sword_attack(dx, dy, game_map.current_room.enemies)
                     shoot_cooldown = 15
-                else:
-                    damage = 1
-                    cooldown = 10
 
-                    #l'arbalète tire lentement mais tue instantanément
-                    if player.weapon == "crossbow":
-                        damage = 999
-                        cooldown = 90
+                elif player.weapon == "crossbow":
+                    damage = 3 + player.damage_boost
+                    cooldown = 75
+                    max_distance = 800 + player.range_boost
 
-                    bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy, damage))
+                    # L'arbalete traverse plusieurs ennemis
+                    bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy, damage, max_distance, (230, 230, 230), 10, pierce=3))
                     shoot_cooldown = cooldown
+
+
+                elif player.weapon == "bow":
+                    damage = 1 + player.damage_boost
+                    cooldown = 18
+                    max_distance = 500 + player.range_boost
+                    bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy, damage, max_distance, (120, 220, 120), 8))
+                    # L'arc propulse le joueur dans le sens inverse du tir
+                    player.rect.x -= dx * 35
+                    player._resolve_collisions(game_map, axis="x")
+                    player.rect.y -= dy * 35
+                    player._resolve_collisions(game_map, axis="y")
+                    shoot_cooldown = cooldown
+
+                elif player.weapon == "magic_wand":
+                    damage = 1 + player.damage_boost
+                    cooldown = 45
+                    max_distance = 650 + player.range_boost
+
+                    # La baguette cree une explosion quand le projectile touche quelque chose
+                    bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy, damage, max_distance, (160, 90, 255), 14, pierce=1, magic=True))
+                    shoot_cooldown = cooldown
+
+
 
 
         
@@ -404,6 +588,11 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
             if not screen.get_rect().colliderect(bullet.rect):
                 bullets.remove(bullet)
                 continue
+            # Supprime la balle quand elle depasse sa portee maximale
+            if bullet.distance_travelled >= bullet.max_distance:
+                bullets.remove(bullet)
+                continue
+
 
             wall_rects = game_map.current_room.get_wall_rects()
             hit_wall = False
@@ -412,28 +601,88 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                     hit_wall = True
                     break
             if hit_wall:
+                if bullet.magic:
+                    create_magic_explosion(bullet.rect.centerx, bullet.rect.centery)
                 bullets.remove(bullet)
                 continue
 
+
             for enemy in game_map.current_room.enemies:
-                if enemy.hp > 0 and bullet.rect.colliderect(enemy.rect):
-                    bullets.remove(bullet)
+                if enemy.hp > 0 and bullet.rect.colliderect(enemy.rect) and id(enemy) not in bullet.hit_enemies:
                     enemy.hp -= bullet.damage
-                    break
+                    bullet.hit_enemies.add(id(enemy))
+
+                    if bullet.magic:
+                        create_magic_explosion(bullet.rect.centerx, bullet.rect.centery)
+                        bullets.remove(bullet)
+                        break
+
+                    bullet.pierce -= 1
+                    if bullet.pierce <= 0:
+                        bullets.remove(bullet)
+                        break
+
+                    # Met a jour le score si un ennemi vient de mourir
+        add_score_for_dead_enemies()
+
 
         
         game_map.update(player)
-
-        #ouvre le coffre si le joueur reste dessus 1 seconde
+        
+        #ouvre le coffre du debut si le joueur reste dessus un court instant
         chest = game_map.current_room.chest
         if chest is not None and not chest.opened:
             if player.rect.colliderect(chest.rect):
                 chest.open_timer += 1
 
-                if chest.open_timer >= 60:
-                    player.weapon = chest.open()
+                if chest.open_timer >= 15:
+                    reward = chest.open()
+                    player.apply_item(reward)
+
+                    if reward == "sword":
+                        pickup_message = "Epee : attaque courte qui repousse les ennemis"
+                    elif reward == "crossbow":
+                        pickup_message = "Arbalete : tir lent qui traverse plusieurs ennemis"
+                    elif reward == "bow":
+                        pickup_message = "Arc : tire et propulse le joueur en arriere"
+                    elif reward == "magic_wand":
+                        pickup_message = "Baguette : projectile explosif de zone"
+
+
+                    pickup_message_timer = 180
             else:
                 chest.open_timer = 0
+
+
+        #ouvre les coffres de recompense des salles terminees
+        for reward_chest in game_map.current_room.reward_chests:
+            if not reward_chest.opened:
+                if player.rect.colliderect(reward_chest.rect):
+                    reward_chest.open_timer += 1
+
+                    if reward_chest.open_timer >= 15:
+                        reward = reward_chest.open()
+                        player.apply_item(reward)
+
+                        if reward == "damage_boost":
+                            pickup_message = "Degats augmentes"
+                        elif reward == "speed_boost":
+                            pickup_message = "Vitesse augmentee"
+                        elif reward == "range_boost":
+                            pickup_message = "Portee augmentee"
+                        elif reward == "sword":
+                            pickup_message = "Epee : attaque courte qui repousse les ennemis"
+                        elif reward == "crossbow":
+                            pickup_message = "Arbalete : tir lent qui traverse plusieurs ennemis"
+                        elif reward == "bow":
+                            pickup_message = "Arc : tire et propulse le joueur en arriere"
+                        elif reward == "magic_wand":
+                            pickup_message = "Baguette : projectile explosif de zone"
+
+                        pickup_message_timer = 180
+                else:
+                    reward_chest.open_timer = 0
+
 
 
         #vérifie si le joueur ramasse un objet au sol
@@ -442,6 +691,13 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
                 picked = player.apply_item(item.type)
                 if picked:
                     game_map.current_room.items.remove(item)
+                                        # Affiche un message selon l'objet ramasse
+                    if item.type == "heart":
+                        pickup_message = "Coeur recupere"
+                    elif item.type == "speed":
+                        pickup_message = "Vitesse augmentee"
+                    pickup_message_timer = 120
+
 
 
         # Collision joueur / ennemis → dégâts
@@ -478,12 +734,23 @@ def lancer_jeu(keyboard_layout="azerty",assets=None):
         game_map.draw(screen, assets) 
         player.draw_hp_bar(screen)
         player.draw_inventory(screen, assets)
+        # Affiche les difffferents visuels supplementaire par-dessus la salle
+        draw_extra_hud(screen, player, game_map, score, pickup_message, pickup_message_timer)
+
 
 
         player.draw()
 
         for bullet in bullets:
             bullet.draw()
+        
+        for explosion in explosions[:]:
+            explosion.update()
+            explosion.draw()
+
+            if explosion.timer <= 0:
+                explosions.remove(explosion)
+
 
         pygame.display.flip()
         
