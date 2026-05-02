@@ -5,17 +5,10 @@ from entitees import Enemy
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 TILE_SIZE = 40
-COLS = SCREEN_WIDTH // TILE_SIZE    # 20
-ROWS = SCREEN_HEIGHT // TILE_SIZE   # 15
-
+COLS = SCREEN_WIDTH // TILE_SIZE
+ROWS = SCREEN_HEIGHT // TILE_SIZE
 MINI_ROOM_SIZE = 12
 MINI_ROOM_GAP  = 4
-MINI_OFFSET_X  = SCREEN_WIDTH - 110
-MINI_OFFSET_Y  = 30
-
-# ─────────────────────────────────────────
-#  Templates de salles
-# ─────────────────────────────────────────
 
 def make_empty():
     return [[0]*COLS for _ in range(ROWS)]
@@ -64,10 +57,6 @@ def make_labyrinthe():
 ROOM_TEMPLATES = [make_empty, make_piliers, make_croix, make_chambres, make_labyrinthe]
 
 
-# ─────────────────────────────────────────
-#  Items & Coffres
-# ─────────────────────────────────────────
-
 class Item:
     def __init__(self, x, y, item_type):
         self.rect = pygame.Rect(x - 14, y - 14, 28, 28)
@@ -98,12 +87,7 @@ class Chest:
         return random.choice(rewards)
 
 
-# ─────────────────────────────────────────
-#  Portail de sortie (passage vers le niveau suivant)
-# ─────────────────────────────────────────
-
 class ExitPortal:
-    """Affiché dans la salle de sortie une fois qu'elle est nettoyée."""
     def __init__(self):
         cx = SCREEN_WIDTH  // 2
         cy = SCREEN_HEIGHT // 2
@@ -138,10 +122,6 @@ class ExitPortal:
         except Exception:
             pass
 
-
-# ─────────────────────────────────────────
-#  Salle
-# ─────────────────────────────────────────
 
 class Room:
     def __init__(self, x, y, level=1, is_start=False, is_exit=False):
@@ -189,9 +169,14 @@ class Room:
                 if free_tiles:
                     ex, ey = random.choice(free_tiles)
                     enemy = Enemy(ex, ey)
-                    # Mise à l'échelle avec le niveau
-                    enemy.hp    = 2 + level
-                    enemy.speed = min(2 + level * 0.4, 4.5)
+                    enemy.hp     = 2 + level
+                    enemy.max_hp = enemy.hp
+                    enemy.speed  = min(2 + level * 0.4, 4.5)
+                    # Donner 2 points de patrouille aux ennemis de type patrol
+                    if enemy.behavior == "patrol" and len(free_tiles) >= 2:
+                        pts = random.sample(free_tiles, 2)
+                        enemy.patrol_points = list(pts)
+                        enemy.state = "patrol"
                     self.enemies.append(enemy)
 
         self.door_directions = {
@@ -221,12 +206,17 @@ class Room:
     def add_door(self, direction):
         self.active_doors.add(direction)
         self._open_door(direction)
+        self._wall_cache = None   # invalide le cache quand une porte s'ouvre
 
     # ── Collisions ──────────────────────────
 
     def get_wall_rects(self):
-        return [pygame.Rect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                for r in range(ROWS) for c in range(COLS) if self.grid[r][c] == 1]
+        if not hasattr(self, "_wall_cache") or self._wall_cache is None:
+            self._wall_cache = [
+                pygame.Rect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                for r in range(ROWS) for c in range(COLS) if self.grid[r][c] == 1
+            ]
+        return self._wall_cache
 
     def get_door_rects(self):
         mid_col = COLS // 2
@@ -301,20 +291,7 @@ class Room:
                     screen.blit(assets["floor"], (x, y))
 
 
-# ─────────────────────────────────────────
-#  Map  (génération par random-walk)
-# ─────────────────────────────────────────
-
 class Map:
-    """
-    Génère une carte non-carrée par random-walk.
-
-    Paramètres
-    ----------
-    level        : numéro du niveau courant (difficulté)
-    num_rooms    : nombre de salles à générer (départ inclus)
-    """
-
     def __init__(self, level=1, num_rooms=None):
         self.level       = level
         self.rooms       = {}
@@ -379,12 +356,14 @@ class Map:
         self.current_room = self.rooms[new_pos]
         self.current_room.visited = True
         if player:
-            mid_col = COLS // 2
-            mid_row = ROWS // 2
-            if dx ==  1: player.rect.left   = TILE_SIZE + 5
-            if dx == -1: player.rect.right  = (COLS-1)*TILE_SIZE - 5
-            if dy ==  1: player.rect.top    = TILE_SIZE + 5
-            if dy == -1: player.rect.bottom = (ROWS-1)*TILE_SIZE - 5
+            # Repositionne le joueur loin de la porte qu'il vient de franchir
+            # pour éviter qu'il la re-traverse immédiatement dans la nouvelle salle
+            margin = TILE_SIZE * 2 + 5
+            if dx ==  1: player.rect.left   = margin
+            if dx == -1: player.rect.right  = COLS * TILE_SIZE - margin
+            if dy ==  1: player.rect.top    = margin
+            if dy == -1: player.rect.bottom = ROWS * TILE_SIZE - margin
+            player.transition_lock = 20   # frames pendant lesquelles les portes sont ignorées
         return True
 
     # ── Update / Draw ───────────────────────

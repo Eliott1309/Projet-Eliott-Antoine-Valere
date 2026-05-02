@@ -87,7 +87,8 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
             self.speed = 5
             self.hp = 5
             self.max_hp = 5
-            self.invincible_timer = 0
+            self.invincible_timer  = 0
+            self.transition_lock   = 0   # ignore les portes juste après un changement de salle
             self.inventory = []
             self.weapon = None
             self.weapons = []
@@ -146,6 +147,8 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         def move(self, keys, game_map):
             if self.invincible_timer > 0:
                 self.invincible_timer -= 1
+            if self.transition_lock > 0:
+                self.transition_lock -= 1
             dx, dy = 0, 0
 
             left_key = pygame.K_q if keyboard_layout == "azerty" else pygame.K_a
@@ -182,6 +185,10 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                     else:
                         if self.rect.centery < wall_rect.centery: self.rect.bottom = wall_rect.top
                         else:                                      self.rect.top    = wall_rect.bottom
+
+            # Ne pas traiter les portes si on vient juste d'en franchir une
+            if self.transition_lock > 0:
+                return
 
             for direction, door_rect in current_room.get_door_rects().items():
                 if self.rect.colliderect(door_rect):
@@ -445,6 +452,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
             bullets.clear()
             explosions.clear()
             player.rect.center = (WIDTH//2, HEIGHT//2)
+            player.transition_lock = 0
             score += current_level * 500
             pickup_message       = f"Niveau {current_level} — Bonne chance !"
             pickup_message_timer = 180
