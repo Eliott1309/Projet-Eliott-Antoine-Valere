@@ -13,7 +13,9 @@ MINI_ROOM_GAP  = 4
 MINI_OFFSET_X  = SCREEN_WIDTH - 110
 MINI_OFFSET_Y  = 30
 
-# Templates de salles
+# ─────────────────────────────────────────
+#  Templates de salles
+# ─────────────────────────────────────────
 
 def make_empty():
     return [[0]*COLS for _ in range(ROWS)]
@@ -59,22 +61,12 @@ def make_labyrinthe():
                 g[r][c] = 1
     return g
 
-def make_arene():
-    """Grande salle ouverte avec un anneau de piliers."""
-    g = make_empty()
-    positions = [(4,3),(4,11),(7,3),(7,11),(10,3),(10,11),(4,7),(7,7)]
-    for px, py in positions:
-        for dy in range(2):
-            for dx in range(2):
-                r, c = py+dy, px+dx
-                if 1 < r < ROWS-1 and 1 < c < COLS-1:
-                    g[r][c] = 1
-    return g
-
-ROOM_TEMPLATES = [make_empty, make_piliers, make_croix, make_chambres, make_labyrinthe, make_arene]
+ROOM_TEMPLATES = [make_empty, make_piliers, make_croix, make_chambres, make_labyrinthe]
 
 
-# Items & Coffres
+# ─────────────────────────────────────────
+#  Items & Coffres
+# ─────────────────────────────────────────
 
 class Item:
     def __init__(self, x, y, item_type):
@@ -106,7 +98,9 @@ class Chest:
         return random.choice(rewards)
 
 
-# Portail de sortie (passage vers le niveau suivant)
+# ─────────────────────────────────────────
+#  Portail de sortie (passage vers le niveau suivant)
+# ─────────────────────────────────────────
 
 class ExitPortal:
     """Affiché dans la salle de sortie une fois qu'elle est nettoyée."""
@@ -145,7 +139,9 @@ class ExitPortal:
             pass
 
 
-# Salle
+# ─────────────────────────────────────────
+#  Salle
+# ─────────────────────────────────────────
 
 class Room:
     def __init__(self, x, y, level=1, is_start=False, is_exit=False):
@@ -205,7 +201,7 @@ class Room:
             "right": ( 1, 0),
         }
 
-    # Grille
+    # ── Grille ──────────────────────────────
 
     def _apply_borders(self):
         for col in range(COLS):
@@ -215,27 +211,18 @@ class Room:
             self.grid[row][0] = 1
             self.grid[row][COLS-1] = 1
 
-    def _open_door(self, direction):
-        mid_col = COLS // 2
-        mid_row = ROWS // 2
-        offsets = {"up": (0, range(mid_col-1, mid_col+2), None),
-                   "down": (ROWS-1, range(mid_col-1, mid_col+2), None),
-                   "left": (None, None, range(mid_row-1, mid_row+2)),
-                   "right": (None, None, range(mid_row-1, mid_row+2))}
-        if direction in ("up", "down"):
-            row = offsets[direction][0]
-            for col in offsets[direction][1]:
-                self.grid[row][col] = 2
-        else:
-            col = COLS-1 if direction == "right" else 0
-            for row in offsets[direction][2]:
-                self.grid[row][col] = 2
+    def _open_door(self, d):
+        mc, mr = COLS//2, ROWS//2
+        if d == "up":    [self.grid[0].__setitem__(c, 2) for c in range(mc-1, mc+2)]
+        elif d == "down": [self.grid[ROWS-1].__setitem__(c, 2) for c in range(mc-1, mc+2)]
+        elif d == "left": [self.grid[r].__setitem__(0, 2) for r in range(mr-1, mr+2)]
+        elif d == "right":[self.grid[r].__setitem__(COLS-1, 2) for r in range(mr-1, mr+2)]
 
     def add_door(self, direction):
         self.active_doors.add(direction)
         self._open_door(direction)
 
-    # Collisions
+    # ── Collisions ──────────────────────────
 
     def get_wall_rects(self):
         return [pygame.Rect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE)
@@ -252,7 +239,7 @@ class Room:
         }
         return {d: r for d, r in all_doors.items() if d in self.active_doors}
 
-    # Update
+    # ── Update ──────────────────────────────
 
     def update(self, player):
         if self.portal:
@@ -278,7 +265,7 @@ class Room:
                     self.items.append(Item(SCREEN_WIDTH//2, SCREEN_HEIGHT//2,
                                            random.choice(["heart", "speed"])))
 
-    # Draw
+    # ── Draw ────────────────────────────────
 
     def draw(self, screen, assets):
         self._draw_tiles(screen, assets)
@@ -301,8 +288,6 @@ class Room:
             label = font.render("Tuez tous les ennemis pour ouvrir le portail", True, (255, 220, 80))
             screen.blit(label, (SCREEN_WIDTH//2 - label.get_width()//2, 8))
 
-    # Draw
-
     def _draw_tiles(self, screen, assets):
         for r in range(ROWS):
             for c in range(COLS):
@@ -316,7 +301,9 @@ class Room:
                     screen.blit(assets["floor"], (x, y))
 
 
-# Map  (génération par random-walk)
+# ─────────────────────────────────────────
+#  Map  (génération par random-walk)
+# ─────────────────────────────────────────
 
 class Map:
     """
@@ -345,66 +332,42 @@ class Map:
         # Signal : le joueur entre dans le portail → changer de niveau
         self.next_level_triggered = False
 
-    # Génération
+    # ── Génération ──────────────────────────
 
     def _generate(self, num_rooms):
-        """Random-walk : crée un chemin organique de salles."""
-        directions = [(0,-1),(0,1),(-1,0),(1,0)]
-        dir_names  = {(0,-1):"up",(0,1):"down",(-1,0):"left",(1,0):"right"}
-        opposite   = {"up":"down","down":"up","left":"right","right":"left"}
+        dirs      = [(0,-1),(0,1),(-1,0),(1,0)]
+        dir_names = {(0,-1):"up",(0,1):"down",(-1,0):"left",(1,0):"right"}
+        visited, stack = {(0,0)}, [(0,0)]
 
-        visited_coords = {(0,0)}
-        walk = [(0,0)]
-        stack = [(0,0)]
-
-        while len(visited_coords) < num_rooms and stack:
+        while len(visited) < num_rooms and stack:
             pos = stack[-1]
-            random.shuffle(directions)
-            moved = False
-            for dx, dy in directions:
-                npos = (pos[0]+dx, pos[1]+dy)
-                if npos not in visited_coords:
-                    visited_coords.add(npos)
-                    walk.append(npos)
-                    stack.append(npos)
-                    moved = True
-                    break
-            if not moved:
+            random.shuffle(dirs)
+            nxt = next(((pos[0]+dx, pos[1]+dy) for dx,dy in dirs
+                        if (pos[0]+dx, pos[1]+dy) not in visited), None)
+            if nxt:
+                visited.add(nxt); stack.append(nxt)
+            else:
                 stack.pop()
 
-        # Compléter si le walk s'est bloqué
-        while len(visited_coords) < num_rooms:
-            base = random.choice(list(visited_coords))
-            random.shuffle(directions)
-            for dx, dy in directions:
+        while len(visited) < num_rooms:            # compléter si bloqué
+            base = random.choice(list(visited))
+            random.shuffle(dirs)
+            for dx, dy in dirs:
                 npos = (base[0]+dx, base[1]+dy)
-                if npos not in visited_coords:
-                    visited_coords.add(npos)
-                    walk.append(npos)
-                    break
+                if npos not in visited:
+                    visited.add(npos); break
 
-        all_coords = list(visited_coords)
-
-        # La salle la plus éloignée de l'origine devient la salle de sortie
-        exit_pos = max(all_coords, key=lambda p: abs(p[0]) + abs(p[1]))
-
-        # Créer les salles
-        for coord in all_coords:
-            is_start = (coord == (0,0))
-            is_exit  = (coord == exit_pos)
-            self.rooms[coord] = Room(coord[0], coord[1],
-                                     level=self.level,
-                                     is_start=is_start,
-                                     is_exit=is_exit)
-
-        # Connecter les portes entre salles voisines
-        for coord in all_coords:
-            for dx, dy in directions:
-                neighbor = (coord[0]+dx, coord[1]+dy)
-                if neighbor in self.rooms:
+        exit_pos = max(visited, key=lambda p: abs(p[0]) + abs(p[1]))
+        for coord in visited:
+            self.rooms[coord] = Room(coord[0], coord[1], level=self.level,
+                                     is_start=(coord==(0,0)), is_exit=(coord==exit_pos))
+        for coord in visited:
+            for dx, dy in dirs:
+                nb = (coord[0]+dx, coord[1]+dy)
+                if nb in self.rooms:
                     self.rooms[coord].add_door(dir_names[(dx,dy)])
 
-    # Changement de salle
+    # ── Changement de salle ─────────────────
 
     def change_room(self, dx, dy, player=None):
         if not self.current_room.cleared:
@@ -424,7 +387,7 @@ class Map:
             if dy == -1: player.rect.bottom = (ROWS-1)*TILE_SIZE - 5
         return True
 
-    # Update / Draw
+    # ── Update / Draw ───────────────────────
 
     def update(self, player):
         self.current_room.update(player)
@@ -434,13 +397,11 @@ class Map:
         if portal and portal.active and portal.rect.colliderect(player.rect):
             self.next_level_triggered = True
 
-    # Update / Draw
-
     def draw(self, screen, assets):
         self.current_room.draw(screen, assets)
         self._draw_minimap(screen)
 
-    # Minimap
+    # ── Minimap ─────────────────────────────
 
     def _draw_minimap(self, screen):
         step = MINI_ROOM_SIZE + MINI_ROOM_GAP
