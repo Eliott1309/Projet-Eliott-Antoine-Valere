@@ -4,79 +4,77 @@ from entitees import Enemy
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-WALL_THICKNESS = 30
-DOOR_SIZE = 60
+TILE_SIZE = 40
+COLS = SCREEN_WIDTH // TILE_SIZE    # 20
+ROWS = SCREEN_HEIGHT // TILE_SIZE   # 15
 
-TILE_SIZE = 40  # taille d'une tuile en pixels
-COLS = SCREEN_WIDTH // TILE_SIZE   # 20 colonnes
-ROWS = SCREEN_HEIGHT // TILE_SIZE  # 15 lignes
+MINI_ROOM_SIZE = 12
+MINI_ROOM_GAP  = 4
+MINI_OFFSET_X  = SCREEN_WIDTH - 110
+MINI_OFFSET_Y  = 30
 
-MINI_ROOM_SIZE = 14
-MINI_ROOM_GAP = 4
-MINI_OFFSET_X = SCREEN_WIDTH - 90
-MINI_OFFSET_Y = 30
-
+# Templates de salles
 
 def make_empty():
-    """Salle vide classique."""
-    grid = [[0]*COLS for _ in range(ROWS)]
-    return grid
+    return [[0]*COLS for _ in range(ROWS)]
 
 def make_piliers():
-    """Salle avec 4 piliers."""
-    grid = make_empty()
+    g = make_empty()
     for px, py in [(5,4),(5,10),(14,4),(14,10)]:
         for dy in range(2):
             for dx in range(2):
-                grid[py+dy][px+dx] = 1
-    return grid
-
-def make_couloir_h():
-    """Couloir horizontal avec murs épais en haut et en bas."""
-    grid = [[1]*COLS for _ in range(ROWS)]
-    for row in range(5, 10):
-        for col in range(COLS):
-            grid[row][col] = 0
-    return grid
-
-def make_couloir_v():
-    """Couloir vertical."""
-    grid = [[1]*COLS for _ in range(ROWS)]
-    for row in range(ROWS):
-        for col in range(8, 12):
-            grid[row][col] = 0
-    return grid
+                g[py+dy][px+dx] = 1
+    return g
 
 def make_croix():
-    """Salle en forme de croix."""
-    grid = [[1]*COLS for _ in range(ROWS)]
+    g = [[1]*COLS for _ in range(ROWS)]
     for row in range(5, 10):
         for col in range(COLS):
-            grid[row][col] = 0
+            g[row][col] = 0
     for row in range(ROWS):
         for col in range(8, 12):
-            grid[row][col] = 0
-    return grid
+            g[row][col] = 0
+    return g
 
 def make_chambres():
-    """Deux chambres reliées par un passage."""
-    grid = make_empty()
-    # mur de séparation vertical au milieu
+    g = make_empty()
     for row in range(ROWS):
-        grid[row][10] = 1
-    # passage au centre
+        g[row][10] = 1
     for row in range(6, 9):
-        grid[row][10] = 0
-    return grid
+        g[row][10] = 0
+    return g
 
-ROOM_TEMPLATES = [
-    make_empty,
-    make_piliers,
-    make_chambres,
-    # make_couloir_h,   # à corriger plus tard
-    # make_couloir_v,   # à corriger plus tard
-    make_croix,       
-]
+def make_labyrinthe():
+    """Quelques murs intérieurs disposés aléatoirement."""
+    g = make_empty()
+    for _ in range(12):
+        col = random.randint(2, COLS - 3)
+        row = random.randint(2, ROWS - 3)
+        length = random.randint(2, 4)
+        horizontal = random.choice([True, False])
+        for i in range(length):
+            r = row + (0 if horizontal else i)
+            c = col + (i if horizontal else 0)
+            if 1 < r < ROWS - 1 and 1 < c < COLS - 1:
+                g[r][c] = 1
+    return g
+
+def make_arene():
+    """Grande salle ouverte avec un anneau de piliers."""
+    g = make_empty()
+    positions = [(4,3),(4,11),(7,3),(7,11),(10,3),(10,11),(4,7),(7,7)]
+    for px, py in positions:
+        for dy in range(2):
+            for dx in range(2):
+                r, c = py+dy, px+dx
+                if 1 < r < ROWS-1 and 1 < c < COLS-1:
+                    g[r][c] = 1
+    return g
+
+ROOM_TEMPLATES = [make_empty, make_piliers, make_croix, make_chambres, make_labyrinthe, make_arene]
+
+
+# Items & Coffres
 
 class Item:
     def __init__(self, x, y, item_type):
@@ -84,12 +82,11 @@ class Item:
         self.type = item_type
 
     def draw(self, screen, assets):
-        if self.type == "heart":
-            screen.blit(assets["heart"], self.rect)
-        elif self.type == "speed":
-            screen.blit(assets["speed"], self.rect)
+        key = self.type if self.type in assets else None
+        if key:
+            screen.blit(assets[key], self.rect)
 
-#represente un coffre qui peut donner une arme ou un bonus
+
 class Chest:
     def __init__(self, x, y, chest_type="start"):
         self.rect = pygame.Rect(x - 18, y - 18, 36, 36)
@@ -97,79 +94,109 @@ class Chest:
         self.open_timer = 0
         self.chest_type = chest_type
 
-    #affiche le coffre tant qu'il n'est pas ouvert
     def draw(self, screen, assets):
         if not self.opened:
             screen.blit(assets["chest"], self.rect)
 
-    #donne une recompense au hasard
     def open(self):
         self.opened = True
-
         if self.chest_type == "start":
             return random.choice(["sword", "crossbow"])
-
-        rewards = [
-            "damage_boost",
-            "speed_boost",
-            "range_boost",
-            "sword",
-            "crossbow",
-            "bow",
-            "magic_wand"
-        ]
-
+        rewards = ["damage_boost","speed_boost","range_boost","sword","crossbow","bow","magic_wand"]
         return random.choice(rewards)
 
 
+# Portail de sortie (passage vers le niveau suivant)
 
+class ExitPortal:
+    """Affiché dans la salle de sortie une fois qu'elle est nettoyée."""
+    def __init__(self):
+        cx = SCREEN_WIDTH  // 2
+        cy = SCREEN_HEIGHT // 2
+        self.rect    = pygame.Rect(cx - 24, cy - 24, 48, 48)
+        self.active  = False          # devient True quand la salle est cleared
+        self.anim    = 0              # compteur d'animation
+
+    def update(self):
+        if self.active:
+            self.anim = (self.anim + 1) % 60
+
+    def draw(self, screen):
+        if not self.active:
+            return
+        # Halo pulsant violet
+        pulse = abs(30 - self.anim) / 30          # 0 → 1 → 0
+        radius = int(28 + 10 * pulse)
+        halo = pygame.Surface((radius*2, radius*2), pygame.SRCALPHA)
+        pygame.draw.circle(halo, (160, 80, 255, 80), (radius, radius), radius)
+        screen.blit(halo, (self.rect.centerx - radius, self.rect.centery - radius))
+
+        # Cercle intérieur
+        inner_color = (200, 130, 255)
+        pygame.draw.circle(screen, inner_color, self.rect.center, 20)
+        pygame.draw.circle(screen, (255, 255, 255), self.rect.center, 20, 2)
+
+        # Texte indicatif
+        try:
+            font = pygame.font.Font(None, 20)
+            label = font.render("SORTIE", True, (255, 255, 255))
+            screen.blit(label, (self.rect.centerx - label.get_width()//2, self.rect.bottom + 6))
+        except Exception:
+            pass
+
+
+# Salle
 
 class Room:
-    def __init__(self, x, y):
+    def __init__(self, x, y, level=1, is_start=False, is_exit=False):
         self.x = x
         self.y = y
+        self.level = level
+        self.is_start = is_start
+        self.is_exit  = is_exit
         self.active_doors = set()
-        self.visited = False
-        self.cleared = False
-        if self.x == 0 and self.y == 0:
-            self.cleared = True
-        self.items = []
+        self.visited  = False
+        self.cleared  = is_start        # la salle de départ est déjà cleared
+        self.items    = []
         self.reward_spawned = False
-        self.chest = None
-        # Coffres de recompense qui peuvent apparaitre apres une salle terminee
-        self.reward_chests = []
+        self.chest    = None
+        self.reward_chests  = []
+        self.portal   = None
 
+        # Coffre de départ dans la salle initiale
+        if is_start:
+            self.chest = Chest(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 80)
 
-        if self.x == 0 and self.y == 0:
-            self.chest = Chest(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80)
+        # Portail dans la salle de sortie
+        if is_exit:
+            self.portal = ExitPortal()
 
-
-
-
-        #la salle de départ est vide
-        if self.x == 0 and self.y == 0:
+        # Grille
+        if is_start:
             self.grid = make_empty()
         else:
             self.grid = random.choice(ROOM_TEMPLATES)()
 
         self._apply_borders()
 
-
-
-        free_tiles = [
-            (col * TILE_SIZE + TILE_SIZE // 2, row * TILE_SIZE + TILE_SIZE // 2)
-            for row in range(1, ROWS - 1)
-            for col in range(1, COLS - 1)
-            if self.grid[row][col] == 0
-        ]
+        # Ennemis (absents dans la salle de départ)
         self.enemies = []
-
-        #la salle de départ contient seulement le coffre
-        if not (self.x == 0 and self.y == 0):
-            for _ in range(random.randint(1, 3)):
+        if not is_start:
+            free_tiles = [
+                (c * TILE_SIZE + TILE_SIZE//2, r * TILE_SIZE + TILE_SIZE//2)
+                for r in range(2, ROWS-2) for c in range(2, COLS-2)
+                if self.grid[r][c] == 0
+            ]
+            # Nombre et difficulté évoluent avec le niveau
+            n_enemies = random.randint(1 + level, 3 + level)
+            for _ in range(n_enemies):
                 if free_tiles:
-                    x, y = random.choice(free_tiles)
-                    self.enemies.append(Enemy(x, y))
+                    ex, ey = random.choice(free_tiles)
+                    enemy = Enemy(ex, ey)
+                    # Mise à l'échelle avec le niveau
+                    enemy.hp    = 2 + level
+                    enemy.speed = min(2 + level * 0.4, 4.5)
+                    self.enemies.append(enemy)
 
         self.door_directions = {
             "up":    (0, -1),
@@ -178,8 +205,9 @@ class Room:
             "right": ( 1, 0),
         }
 
+    # Grille
+
     def _apply_borders(self):
-        """Force les bords de la grille en murs."""
         for col in range(COLS):
             self.grid[0][col] = 1
             self.grid[ROWS-1][col] = 1
@@ -190,170 +218,264 @@ class Room:
     def _open_door(self, direction):
         mid_col = COLS // 2
         mid_row = ROWS // 2
-        if direction == "up":
-            for col in range(mid_col - 1, mid_col + 2):
-                self.grid[0][col] = 2
-        elif direction == "down":
-            for col in range(mid_col - 1, mid_col + 2):
-                self.grid[ROWS-1][col] = 2
-        elif direction == "left":
-            for row in range(mid_row - 1, mid_row + 2):
-                self.grid[row][0] = 2
-        elif direction == "right":
-            for row in range(mid_row - 1, mid_row + 2):
-                self.grid[row][COLS-1] = 2
+        offsets = {"up": (0, range(mid_col-1, mid_col+2), None),
+                   "down": (ROWS-1, range(mid_col-1, mid_col+2), None),
+                   "left": (None, None, range(mid_row-1, mid_row+2)),
+                   "right": (None, None, range(mid_row-1, mid_row+2))}
+        if direction in ("up", "down"):
+            row = offsets[direction][0]
+            for col in offsets[direction][1]:
+                self.grid[row][col] = 2
+        else:
+            col = COLS-1 if direction == "right" else 0
+            for row in offsets[direction][2]:
+                self.grid[row][col] = 2
 
     def add_door(self, direction):
         self.active_doors.add(direction)
         self._open_door(direction)
 
+    # Collisions
+
     def get_wall_rects(self):
-        """Retourne les rects de collision de toutes les tuiles mur."""
-        rects = []
-        for row in range(ROWS):
-            for col in range(COLS):
-                if self.grid[row][col] == 1:
-                    rects.append(pygame.Rect(col*TILE_SIZE, row*TILE_SIZE, TILE_SIZE, TILE_SIZE))
-        return rects
+        return [pygame.Rect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                for r in range(ROWS) for c in range(COLS) if self.grid[r][c] == 1]
 
     def get_door_rects(self):
-        """Retourne les rects des ouvertures de portes (pour le passage)."""
         mid_col = COLS // 2
         mid_row = ROWS // 2
         all_doors = {
-            "up":    pygame.Rect((mid_col-1)*TILE_SIZE, 0, TILE_SIZE*3, TILE_SIZE),
+            "up":    pygame.Rect((mid_col-1)*TILE_SIZE, 0,              TILE_SIZE*3, TILE_SIZE),
             "down":  pygame.Rect((mid_col-1)*TILE_SIZE, (ROWS-1)*TILE_SIZE, TILE_SIZE*3, TILE_SIZE),
-            "left":  pygame.Rect(0, (mid_row-1)*TILE_SIZE, TILE_SIZE, TILE_SIZE*3),
+            "left":  pygame.Rect(0,              (mid_row-1)*TILE_SIZE, TILE_SIZE, TILE_SIZE*3),
             "right": pygame.Rect((COLS-1)*TILE_SIZE, (mid_row-1)*TILE_SIZE, TILE_SIZE, TILE_SIZE*3),
         }
         return {d: r for d, r in all_doors.items() if d in self.active_doors}
 
+    # Update
+
     def update(self, player):
-        if not self.cleared:
-            wall_rects = self.get_wall_rects()
-            for enemy in self.enemies:
-                if enemy.hp > 0:
-                    enemy.update(player, wall_rects)
-            if all(e.hp <= 0 for e in self.enemies):
-                self.cleared = True
-                if not self.reward_spawned:
-                    self.reward_spawned = True
+        if self.portal:
+            self.portal.update()
+            if self.cleared and not self.portal.active:
+                self.portal.active = True
 
-                # Une salle terminee a une chance de faire apparaitre un coffre
+        if self.cleared:
+            return
+
+        wall_rects = self.get_wall_rects()
+        for enemy in self.enemies:
+            if enemy.hp > 0:
+                enemy.update(player, wall_rects)
+
+        if all(e.hp <= 0 for e in self.enemies):
+            self.cleared = True
+            if not self.reward_spawned:
+                self.reward_spawned = True
                 if random.random() < 0.55:
-                    self.reward_chests.append(Chest(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, "reward"))
+                    self.reward_chests.append(Chest(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, "reward"))
                 else:
-                     item_type = random.choice(["heart", "speed"])
-                     self.items.append(Item(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, item_type))
+                    self.items.append(Item(SCREEN_WIDTH//2, SCREEN_HEIGHT//2,
+                                           random.choice(["heart", "speed"])))
 
-
+    # Draw
 
     def draw(self, screen, assets):
         self._draw_tiles(screen, assets)
-         
-        if self.chest is not None:
-            self.chest.draw(screen, assets)
-        
-        for reward_chest in self.reward_chests:
-            reward_chest.draw(screen, assets)
 
-             
+        if self.chest:
+            self.chest.draw(screen, assets)
+        for rc in self.reward_chests:
+            rc.draw(screen, assets)
         for item in self.items:
             item.draw(screen, assets)
-
         for enemy in self.enemies:
             if enemy.hp > 0:
                 enemy.draw(screen, assets)
+        if self.portal:
+            self.portal.draw(screen)
+
+        # Indicateur visuel sur la salle de sortie (avant cleared)
+        if self.is_exit and not self.cleared:
+            font = pygame.font.Font(None, 22)
+            label = font.render("Tuez tous les ennemis pour ouvrir le portail", True, (255, 220, 80))
+            screen.blit(label, (SCREEN_WIDTH//2 - label.get_width()//2, 8))
+
+    # Draw
 
     def _draw_tiles(self, screen, assets):
-        for row in range(ROWS):
-             for col in range(COLS):
-                 tile = self.grid[row][col]
-                 x = col * TILE_SIZE
-                 y = row * TILE_SIZE
-
-                 if tile == 1:
-                     screen.blit(assets["wall"], (x, y))
-                 elif tile == 2:
-                     screen.blit(assets["door"], (x, y))
-                 else:
-                     screen.blit(assets["floor"], (x, y))
+        for r in range(ROWS):
+            for c in range(COLS):
+                tile = self.grid[r][c]
+                x, y = c*TILE_SIZE, r*TILE_SIZE
+                if tile == 1:
+                    screen.blit(assets["wall"],  (x, y))
+                elif tile == 2:
+                    screen.blit(assets["door"],  (x, y))
+                else:
+                    screen.blit(assets["floor"], (x, y))
 
 
+# Map  (génération par random-walk)
 
 class Map:
-    def __init__(self):
-        self.rooms = {}
-        for x in range(-1, 2):
-            for y in range(-1, 2):
-                self.rooms[(x, y)] = Room(x, y)
+    """
+    Génère une carte non-carrée par random-walk.
 
+    Paramètres
+    ----------
+    level        : numéro du niveau courant (difficulté)
+    num_rooms    : nombre de salles à générer (départ inclus)
+    """
+
+    def __init__(self, level=1, num_rooms=None):
+        self.level       = level
+        self.rooms       = {}
         self.current_pos = (0, 0)
+
+        # Nombre de salles qui augmente avec les niveaux
+        if num_rooms is None:
+            num_rooms = 8 + level * 2          # niveau 1 → 10, niveau 2 → 12, etc.
+        num_rooms = max(num_rooms, 6)
+
+        self._generate(num_rooms)
         self.current_room = self.rooms[self.current_pos]
         self.current_room.visited = True
-        self._init_active_doors()
 
-    def _init_active_doors(self):
-        neighbors = {"up": (0,-1), "down": (0,1), "left": (-1,0), "right": (1,0)}
+        # Signal : le joueur entre dans le portail → changer de niveau
+        self.next_level_triggered = False
 
-        for (x, y), room in self.rooms.items():
-            #la salle de départ a une seule porte vers la droite
-            if (x, y) == (0, 0):
-                room.add_door("right")
-            else:
-                for direction, (dx, dy) in neighbors.items():
-                    if (x+dx, y+dy) in self.rooms and (x+dx, y+dy) != (0, 0):
-                        room.add_door(direction)
+    # Génération
 
+    def _generate(self, num_rooms):
+        """Random-walk : crée un chemin organique de salles."""
+        directions = [(0,-1),(0,1),(-1,0),(1,0)]
+        dir_names  = {(0,-1):"up",(0,1):"down",(-1,0):"left",(1,0):"right"}
+        opposite   = {"up":"down","down":"up","left":"right","right":"left"}
 
+        visited_coords = {(0,0)}
+        walk = [(0,0)]
+        stack = [(0,0)]
+
+        while len(visited_coords) < num_rooms and stack:
+            pos = stack[-1]
+            random.shuffle(directions)
+            moved = False
+            for dx, dy in directions:
+                npos = (pos[0]+dx, pos[1]+dy)
+                if npos not in visited_coords:
+                    visited_coords.add(npos)
+                    walk.append(npos)
+                    stack.append(npos)
+                    moved = True
+                    break
+            if not moved:
+                stack.pop()
+
+        # Compléter si le walk s'est bloqué
+        while len(visited_coords) < num_rooms:
+            base = random.choice(list(visited_coords))
+            random.shuffle(directions)
+            for dx, dy in directions:
+                npos = (base[0]+dx, base[1]+dy)
+                if npos not in visited_coords:
+                    visited_coords.add(npos)
+                    walk.append(npos)
+                    break
+
+        all_coords = list(visited_coords)
+
+        # La salle la plus éloignée de l'origine devient la salle de sortie
+        exit_pos = max(all_coords, key=lambda p: abs(p[0]) + abs(p[1]))
+
+        # Créer les salles
+        for coord in all_coords:
+            is_start = (coord == (0,0))
+            is_exit  = (coord == exit_pos)
+            self.rooms[coord] = Room(coord[0], coord[1],
+                                     level=self.level,
+                                     is_start=is_start,
+                                     is_exit=is_exit)
+
+        # Connecter les portes entre salles voisines
+        for coord in all_coords:
+            for dx, dy in directions:
+                neighbor = (coord[0]+dx, coord[1]+dy)
+                if neighbor in self.rooms:
+                    self.rooms[coord].add_door(dir_names[(dx,dy)])
+
+    # Changement de salle
 
     def change_room(self, dx, dy, player=None):
         if not self.current_room.cleared:
             return False
         new_pos = (self.current_pos[0]+dx, self.current_pos[1]+dy)
-        if new_pos in self.rooms:
-            self.current_pos = new_pos
-            self.current_room = self.rooms[new_pos]
-            self.current_room.visited = True
-            if player:
-                mid_col = COLS // 2
-                mid_row = ROWS // 2
-                if dx == 1:  player.rect.left = TILE_SIZE + 5
-                if dx == -1: player.rect.right = (COLS-1)*TILE_SIZE - 5
-                if dy == 1:  player.rect.top = TILE_SIZE + 5
-                if dy == -1: player.rect.bottom = (ROWS-1)*TILE_SIZE - 5
-            return True
-        return False
+        if new_pos not in self.rooms:
+            return False
+        self.current_pos  = new_pos
+        self.current_room = self.rooms[new_pos]
+        self.current_room.visited = True
+        if player:
+            mid_col = COLS // 2
+            mid_row = ROWS // 2
+            if dx ==  1: player.rect.left   = TILE_SIZE + 5
+            if dx == -1: player.rect.right  = (COLS-1)*TILE_SIZE - 5
+            if dy ==  1: player.rect.top    = TILE_SIZE + 5
+            if dy == -1: player.rect.bottom = (ROWS-1)*TILE_SIZE - 5
+        return True
+
+    # Update / Draw
 
     def update(self, player):
         self.current_room.update(player)
+
+        # Détecter si le joueur entre dans le portail
+        portal = self.current_room.portal
+        if portal and portal.active and portal.rect.colliderect(player.rect):
+            self.next_level_triggered = True
+
+    # Update / Draw
 
     def draw(self, screen, assets):
         self.current_room.draw(screen, assets)
         self._draw_minimap(screen)
 
+    # Minimap
+
     def _draw_minimap(self, screen):
         step = MINI_ROOM_SIZE + MINI_ROOM_GAP
+
+        # Calculer le centre de la minimap dynamiquement
+        all_x = [x for x,y in self.rooms]
+        all_y = [y for x,y in self.rooms]
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+        map_w = (max_x - min_x + 1) * step
+        map_h = (max_y - min_y + 1) * step
+
+        offset_x = SCREEN_WIDTH  - map_w - 10
+        offset_y = 10
+
         for (x, y), room in self.rooms.items():
-            if not room.visited and (x, y) != self.current_pos:
-                is_adjacent = any(
-                    (self.current_pos[0]+dx, self.current_pos[1]+dy) == (x, y)
-                    for dx, dy in [(0,-1),(0,1),(-1,0),(1,0)]
-                )
-                if not is_adjacent:
+            if not room.visited:
+                # Montrer les salles adjacentes comme inconnues
+                adjacent = any((self.current_pos[0]+dx, self.current_pos[1]+dy) == (x,y)
+                               for dx,dy in [(0,-1),(0,1),(-1,0),(1,0)])
+                if not adjacent:
                     continue
                 color = (60, 60, 60)
-            elif not room.visited:
-                continue
             elif (x, y) == self.current_pos:
                 color = (255, 220, 50)
+            elif room.is_exit:
+                color = (180, 80, 255)   # violet = sortie
             elif room.cleared:
                 color = (80, 180, 80)
             else:
                 color = (180, 80, 80)
 
-            draw_x = MINI_OFFSET_X + x * step
-            draw_y = MINI_OFFSET_Y + y * step
+            draw_x = offset_x + (x - min_x) * step
+            draw_y = offset_y + (y - min_y) * step
             pygame.draw.rect(screen, color, (draw_x, draw_y, MINI_ROOM_SIZE, MINI_ROOM_SIZE))
             if (x, y) == self.current_pos:
-                pygame.draw.rect(screen, (255,255,255), (draw_x, draw_y, MINI_ROOM_SIZE, MINI_ROOM_SIZE), 1)
+                pygame.draw.rect(screen, (255,255,255),
+                                 (draw_x, draw_y, MINI_ROOM_SIZE, MINI_ROOM_SIZE), 1)
