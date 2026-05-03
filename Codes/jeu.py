@@ -76,7 +76,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     PLAYER_MAX_HP = 100
     HEART_HEAL = 30
     CONTACT_DAMAGE = 6
-    BOW_KNOCKBACK = 58
+    BOW_KNOCKBACK = 24
 
     # ──────────────────────────────────────────────────────────────
     def draw_extra_hud(surface, player, game_map, score, pickup_message, pickup_message_timer):
@@ -141,9 +141,17 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                 elif len(self.inventory)<5: self.inventory.append("heart");        return True
                 return False
             boosts = {"speed":("speed",0.5),"damage_boost":("damage_boost",1),
-                      "speed_boost":("speed",0.75),"range_boost":("range_boost",150)}
+                "speed_boost":("speed",0.75),"range_boost":("range_boost",150)}
             if item_type in boosts:
-                attr, val = boosts[item_type]; setattr(self, attr, getattr(self, attr)+val); return True
+                attr, val = boosts[item_type]
+                setattr(self, attr, getattr(self, attr) + val)
+
+                #limite la vitesse pour éviter de traverser les murs
+                if attr == "speed":
+                    self.speed = min(self.speed, 7)
+
+                return True
+
             if item_type in ["sword","crossbow","bow","magic_wand"]:
                 self.add_weapon(item_type); return True
 
@@ -191,6 +199,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
             self._resolve_collisions(game_map, "x")
             self.rect.y += dy * self.speed
             self._resolve_collisions(game_map, "y")
+            self.keep_inside_screen()
 
         def _resolve_collisions(self, game_map, axis):
             current_room = game_map.current_room
@@ -220,6 +229,18 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                         else:
                             if self.rect.centery < door_rect.centery: self.rect.bottom = door_rect.top
                             else:                                      self.rect.top    = door_rect.bottom
+
+        #empêche le joueur de sortir de l'écran
+        def keep_inside_screen(self):
+            if self.rect.left < 0:
+                self.rect.left = 0
+            if self.rect.right > WIDTH:
+                self.rect.right = WIDTH
+            if self.rect.top < 0:
+                self.rect.top = 0
+            if self.rect.bottom > HEIGHT:
+                self.rect.bottom = HEIGHT
+
 
         def draw(self):
             # Petit effet de respiration pour que le joueur paraisse vivant.
