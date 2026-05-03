@@ -660,7 +660,6 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
             rs_surf = font_restart.render("Appuie sur ECHAP pour quitter", True, WHITE)
             sc_surf = font_restart.render(f"Score final : {score}", True, (255, 230, 120))
             screen.blit(go_surf, go_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 60)))
-            screen.blit(go_surf, go_surf.get_rect(center=(WIDTH//2, HEIGHT//2 - 60)))
             screen.blit(sc_surf, sc_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 10)))
             screen.blit(rs_surf, rs_surf.get_rect(center=(WIDTH//2, HEIGHT//2 + 50)))
             pygame.display.flip()
