@@ -336,6 +336,12 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
     current_level = 1
     game_map = Map(level=current_level)
+    game_finished = False
+    ending_transition = False
+    ending_text_index = 0
+    ending_message = "Vous avez sauvé la princesse. Le royaume est enfin libéré."
+    princess_rect = pygame.Rect(WIDTH//2 - 25, HEIGHT//2 - 35, 50, 70)
+
 
     score = 0
     counted_dead_enemies = set()
@@ -418,12 +424,43 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                         if typewriter_channel: typewriter_channel.stop(); typewriter_channel = None
                     else:
                         quest_transition = False
+                            
+                if ending_transition and event.key == pygame.K_SPACE:
+                    if ending_text_index < len(ending_message):
+                        ending_text_index = len(ending_message)
+                    else:
+                        running = False
 
                 if event.key == pygame.K_1: player.switch_weapon()
                 elif event.key == pygame.K_2: player.use_inventory_item(0)
                 elif event.key == pygame.K_3: player.use_inventory_item(1)
                 elif event.key == pygame.K_4: player.use_inventory_item(2)
                 elif event.key == pygame.K_5: player.use_inventory_item(3)
+
+        if game_finished:
+            screen.fill((30, 20, 45))
+
+            pygame.draw.rect(screen, (80, 60, 100), (0, 0, WIDTH, HEIGHT), 12)
+
+            pygame.draw.rect(screen, (245, 190, 220), princess_rect, border_radius=10)
+            pygame.draw.circle(screen, (255, 225, 190), (princess_rect.centerx, princess_rect.y + 15), 16)
+            pygame.draw.rect(screen, (255, 220, 80), (princess_rect.x + 8, princess_rect.y - 8, 34, 10), border_radius=3)
+
+            label = font_message.render("Princesse", True, WHITE)
+            screen.blit(label, label.get_rect(center=(WIDTH//2, HEIGHT//2 + 55)))
+
+            if player.rect.colliderect(princess_rect):
+                ending_transition = True
+
+            if ending_transition:
+                if ending_text_index < len(ending_message):
+                    ending_text_index += 1
+                draw_dialog_box(screen, ending_message, WIDTH, HEIGHT, ending_text_index)
+
+            player.draw()
+            pygame.display.flip()
+            continue
+
 
         # ── Boîte de dialogue intro ──────────────────────────────
         if quest_transition:
@@ -528,18 +565,28 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
         # ── Passage au niveau suivant ─────────────────────────────
         if game_map.next_level_triggered:
-            current_level += 1
-            show_level_transition(current_level)
-            game_map = Map(level=current_level)
-            bullets.clear()
-            explosions.clear()
-            enemy_bullets.clear()
-            warning_circles.clear()
-            player.rect.center = (WIDTH//2, HEIGHT//2)
-            player.transition_lock = 0
-            score += current_level * 500
-            pickup_message       = f"Niveau {current_level} — Bonne chance !"
-            pickup_message_timer = 180
+            if current_level >= 10:
+                game_finished = True
+                game_map.next_level_triggered = False
+                bullets.clear()
+                explosions.clear()
+                enemy_bullets.clear()
+                warning_circles.clear()
+                player.rect.center = (WIDTH//2, HEIGHT - 80)
+            else:
+                current_level += 1
+                show_level_transition(current_level)
+                game_map = Map(level=current_level)
+                bullets.clear()
+                explosions.clear()
+                enemy_bullets.clear()
+                warning_circles.clear()
+                player.rect.center = (WIDTH//2, HEIGHT//2)
+                player.transition_lock = 0
+                score += current_level * 500
+                pickup_message       = f"Niveau {current_level} — Bonne chance !"
+                pickup_message_timer = 180
+
 
         # ── Coffres ───────────────────────────────────────────────
         WEAPON_LABELS = {"sword":"Epee : attaque courte","crossbow":"Arbalete : tir pénétrant",
