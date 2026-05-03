@@ -1,6 +1,6 @@
 import random
 import pygame
-from entitees import Enemy
+from entitees import Enemy, Boss
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -65,7 +65,8 @@ class Item:
     def draw(self, screen, assets):
         key = self.type if self.type in assets else None
         if key:
-            screen.blit(assets[key], self.rect)
+            pulse = 2 if pygame.time.get_ticks() // 260 % 2 == 0 else 0
+            screen.blit(assets[key], self.rect.inflate(pulse, pulse))
 
 
 class Chest:
@@ -77,13 +78,17 @@ class Chest:
 
     def draw(self, screen, assets):
         if not self.opened:
-            screen.blit(assets["chest"], self.rect)
+            bob = 2 if pygame.time.get_ticks() // 300 % 2 == 0 else 0
+            draw_rect = self.rect.move(0, -bob)
+            screen.blit(assets["chest"], draw_rect)
+            if pygame.time.get_ticks() // 180 % 5 == 0:
+                pygame.draw.line(screen, (255, 240, 160), draw_rect.topleft, draw_rect.center, 1)
 
     def open(self):
         self.opened = True
         if self.chest_type == "start":
             return random.choice(["sword", "crossbow"])
-        rewards = ["damage_boost","speed_boost","range_boost","sword","crossbow","bow","magic_wand"]
+        rewards = ["heart","heart","damage_boost","speed_boost","range_boost","range_boost","sword","crossbow","bow","magic_wand"]
         return random.choice(rewards)
 
 
@@ -130,6 +135,7 @@ class Room:
         self.level = level
         self.is_start = is_start
         self.is_exit  = is_exit
+        self.is_boss_room = is_exit and level in (5, 10)
         self.active_doors = set()
         self.visited  = False
         self.cleared  = is_start        # la salle de départ est déjà cleared
@@ -138,6 +144,7 @@ class Room:
         self.chest    = None
         self.reward_chests  = []
         self.portal   = None
+        self.decorations = []
 
         # Coffre de départ dans la salle initiale
         if is_start:
@@ -154,24 +161,29 @@ class Room:
             self.grid = random.choice(ROOM_TEMPLATES)()
 
         self._apply_borders()
+        self._create_decorations()
 
         # Ennemis (absents dans la salle de départ)
         self.enemies = []
-        if not is_start:
+        if self.is_boss_room:
+            boss_kind = "warden" if level == 5 else "sorcerer"
+            boss = Boss(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, boss_kind, level)
+            self.enemies.append(boss)
+        elif not is_start:
             free_tiles = [
                 (c * TILE_SIZE + TILE_SIZE//2, r * TILE_SIZE + TILE_SIZE//2)
                 for r in range(2, ROWS-2) for c in range(2, COLS-2)
                 if self.grid[r][c] == 0
             ]
             # Nombre et difficulté évoluent avec le niveau
-            n_enemies = random.randint(1 + level, 3 + level)
+            n_enemies = random.randint(1 + level // 2, 2 + level)
             for _ in range(n_enemies):
                 if free_tiles:
                     ex, ey = random.choice(free_tiles)
                     enemy = Enemy(ex, ey)
                     enemy.hp     = 2 + level
                     enemy.max_hp = enemy.hp
-                    enemy.speed  = min(2 + level * 0.4, 4.5)
+                    enemy.speed  = min(1.8 + level * 0.28, 4.0)
                     # Donner 2 points de patrouille aux ennemis de type patrol
                     if enemy.behavior == "patrol" and len(free_tiles) >= 2:
                         pts = random.sample(free_tiles, 2)
@@ -195,6 +207,16 @@ class Room:
         for row in range(ROWS):
             self.grid[row][0] = 1
             self.grid[row][COLS-1] = 1
+
+    def _create_decorations(self):
+        free_tiles = [
+            (c * TILE_SIZE + TILE_SIZE//2, r * TILE_SIZE + TILE_SIZE//2)
+            for r in range(2, ROWS-2) for c in range(2, COLS-2)
+            if self.grid[r][c] == 0
+        ]
+        random.shuffle(free_tiles)
+        for x, y in free_tiles[:random.randint(8, 16)]:
+            self.decorations.append((x, y, random.choice(["stone", "crack", "rune", "dust"])))
 
     def _open_door(self, d):
         mc, mr = COLS//2, ROWS//2
@@ -249,16 +271,19 @@ class Room:
             self.cleared = True
             if not self.reward_spawned:
                 self.reward_spawned = True
-                if random.random() < 0.55:
+                if len(self.enemies) == 0:
+                    self.reward_chests.append(Chest(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, "reward"))
+                elif random.random() < 0.45:
                     self.reward_chests.append(Chest(SCREEN_WIDTH//2, SCREEN_HEIGHT//2, "reward"))
                 else:
                     self.items.append(Item(SCREEN_WIDTH//2, SCREEN_HEIGHT//2,
-                                           random.choice(["heart", "speed"])))
+                                           random.choice(["heart", "heart", "heart", "speed"])))
 
     # ── Draw ────────────────────────────────
 
     def draw(self, screen, assets):
         self._draw_tiles(screen, assets)
+        self._draw_decorations(screen)
 
         if self.chest:
             self.chest.draw(screen, assets)
@@ -273,22 +298,50 @@ class Room:
             self.portal.draw(screen)
 
         # Indicateur visuel sur la salle de sortie (avant cleared)
-        if self.is_exit and not self.cleared:
+        if self.is_boss_room and not self.cleared:
+            font = pygame.font.Font(None, 24)
+            label = font.render("BOSS - survive et trouve son rythme", True, (255, 90, 90))
+            screen.blit(label, (SCREEN_WIDTH//2 - label.get_width()//2, 8))
+        elif self.is_exit and not self.cleared:
             font = pygame.font.Font(None, 22)
             label = font.render("Tuez tous les ennemis pour ouvrir le portail", True, (255, 220, 80))
             screen.blit(label, (SCREEN_WIDTH//2 - label.get_width()//2, 8))
 
     def _draw_tiles(self, screen, assets):
+        anim = pygame.time.get_ticks() // 220
         for r in range(ROWS):
             for c in range(COLS):
                 tile = self.grid[r][c]
                 x, y = c*TILE_SIZE, r*TILE_SIZE
                 if tile == 1:
                     screen.blit(assets["wall"],  (x, y))
+                    if (r + c + anim) % 11 == 0:
+                        pygame.draw.rect(screen, (80, 70, 90), (x+4, y+4, 8, 8), 1)
                 elif tile == 2:
                     screen.blit(assets["door"],  (x, y))
+                    if self.cleared:
+                        pygame.draw.rect(screen, (120, 255, 150), (x+3, y+3, TILE_SIZE-6, TILE_SIZE-6), 2)
+                    else:
+                        pygame.draw.line(screen, (180, 40, 40), (x+8, y+8), (x+TILE_SIZE-8, y+TILE_SIZE-8), 3)
+                        pygame.draw.line(screen, (180, 40, 40), (x+TILE_SIZE-8, y+8), (x+8, y+TILE_SIZE-8), 3)
                 else:
                     screen.blit(assets["floor"], (x, y))
+
+    def _draw_decorations(self, screen):
+        tick = pygame.time.get_ticks()
+        for x, y, deco in self.decorations:
+            if deco == "stone":
+                pygame.draw.circle(screen, (70, 70, 75), (x-8, y+5), 4)
+                pygame.draw.circle(screen, (55, 55, 60), (x+7, y-4), 3)
+            elif deco == "crack":
+                pygame.draw.line(screen, (45, 45, 50), (x-12, y-4), (x-2, y+2), 2)
+                pygame.draw.line(screen, (45, 45, 50), (x-2, y+2), (x+10, y-8), 2)
+            elif deco == "rune":
+                alpha_color = (120, 70 + (tick//120) % 60, 180)
+                pygame.draw.circle(screen, alpha_color, (x, y), 7, 1)
+                pygame.draw.line(screen, alpha_color, (x-5, y), (x+5, y), 1)
+            else:
+                pygame.draw.circle(screen, (85, 75, 55), (x, y), 2)
 
 
 class Map:

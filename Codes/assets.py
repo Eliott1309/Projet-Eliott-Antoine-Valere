@@ -7,12 +7,19 @@ def load_assets():
     assets = {}
     
     base = os.path.dirname(os.path.abspath(__file__))
+
+    def load_image(name, filename, alpha=True):
+        path = os.path.join(base, "assets", filename)
+        if alpha:
+            assets[name] = pygame.image.load(path).convert_alpha()
+        else:
+            assets[name] = pygame.image.load(path).convert()
     
-    assets["floor"] = pygame.image.load(os.path.join(base, "assets", "floor2.png")).convert()
-    assets["wall"]  = pygame.image.load(os.path.join(base, "assets", "wall.png")).convert()
-    assets["door"]  = pygame.image.load(os.path.join(base, "assets", "door.png")).convert()
-    assets["enemy"] = pygame.image.load(os.path.join(base, "assets", "enemy.png")).convert_alpha()
-    assets["player"]= pygame.image.load(os.path.join(base, "assets", "player.png")).convert_alpha()
+    load_image("floor", "floor.png", False)
+    load_image("wall", "wall.png", True)
+    load_image("door", "door.png", True)
+    load_image("enemy", "enemy.png", True)
+    load_image("player", "player.png", True)
 
     assets["floor"]  = pygame.transform.smoothscale(assets["floor"],  (TILE_SIZE, TILE_SIZE))
     assets["wall"]   = pygame.transform.smoothscale(assets["wall"],   (TILE_SIZE, TILE_SIZE))
@@ -20,19 +27,35 @@ def load_assets():
     assets["enemy"]  = pygame.transform.smoothscale(assets["enemy"],  (47, 47))
     assets["player"] = pygame.transform.smoothscale(assets["player"], (40, 40))
 
+    load_image("enemy_stalker", "enemy_stalker.png", True)
+    load_image("enemy_shooter", "enemy_shooter.png", True)
+    load_image("enemy_charger", "enemy_charger.png", True)
+    load_image("enemy_bomber", "enemy_bomber.png", True)
+    load_image("boss_warden", "boss_warden.png", True)
+    load_image("boss_sorcerer", "boss_sorcerer.png", True)
+
+    for key in ["enemy_stalker", "enemy_shooter", "enemy_charger", "enemy_bomber"]:
+        assets[key] = pygame.transform.smoothscale(assets[key], (47, 47))
+    assets["boss_warden"] = pygame.transform.smoothscale(assets["boss_warden"], (76, 76))
+    assets["boss_sorcerer"] = pygame.transform.smoothscale(assets["boss_sorcerer"], (76, 76))
+
     assets["heart"] = pygame.image.load(os.path.join(base, "assets", "heart.png")).convert_alpha()
     assets["speed"] = pygame.image.load(os.path.join(base, "assets", "speed.png")).convert_alpha()
 
     assets["heart"] = pygame.transform.smoothscale(assets["heart"], (25, 25))
     assets["speed"] = pygame.transform.smoothscale(assets["speed"], (25, 25))
 
-    assets["chest"] = pygame.image.load(os.path.join(base, "assets", "chest.png")).convert_alpha()
-    assets["sword"] = pygame.image.load(os.path.join(base, "assets", "sword.png")).convert_alpha()
-    assets["crossbow"] = pygame.image.load(os.path.join(base, "assets", "crossbow.png")).convert_alpha()
+    load_image("chest", "chest.png", True)
+    load_image("sword", "sword.png", True)
+    load_image("crossbow", "crossbow.png", True)
+    load_image("bow", "bow.png", True)
+    load_image("magic_wand", "magic_wand.png", True)
 
     assets["chest"] = pygame.transform.smoothscale(assets["chest"], (36, 36))
     assets["sword"] = pygame.transform.smoothscale(assets["sword"], (30, 30))
     assets["crossbow"] = pygame.transform.smoothscale(assets["crossbow"], (30, 30))
+    assets["bow"] = pygame.transform.smoothscale(assets["bow"], (30, 30))
+    assets["magic_wand"] = pygame.transform.smoothscale(assets["magic_wand"], (30, 30))
 
     assets["footstep"] = pygame.mixer.Sound(os.path.join(base, "assets", "footstep.wav"))
     assets["footstep"].set_volume(0.1)

@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+import random
 from map import Map, SCREEN_HEIGHT, SCREEN_WIDTH
 
 base = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +55,14 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Mini Isaac")
 
+    # Lance la meme musique pendant la partie que dans le menu.
+    try:
+        pygame.mixer.music.load(os.path.join(base, "assets", "music.mp3"))
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+    except:
+        pass
+
     clock = pygame.time.Clock()
 
     font_game_over = get_medieval_font(80)
@@ -64,6 +73,10 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     WHITE = (255, 255, 255)
     RED   = (200,  50,  50)
     BLACK = (0,    0,    0)
+    PLAYER_MAX_HP = 100
+    HEART_HEAL = 30
+    CONTACT_DAMAGE = 6
+    BOW_KNOCKBACK = 58
 
     # ──────────────────────────────────────────────────────────────
     def draw_extra_hud(surface, player, game_map, score, pickup_message, pickup_message_timer):
@@ -75,6 +88,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         surface.blit(font_hud.render("Arme : " + weapon_names[player.weapon], True, WHITE), (10, 66))
         surface.blit(font_hud.render("Ennemis restants : " + str(enemies_left), True, WHITE), (10, 94))
         surface.blit(font_hud.render("Niveau : " + str(game_map.level), True, (200, 130, 255)), (10, 122))
+        surface.blit(font_hud.render("Armes : touche 1", True, (210, 210, 210)), (10, 150))
 
         if pickup_message_timer > 0:
             msg_surf = font_message.render(pickup_message, True, (255, 230, 120))
@@ -85,8 +99,8 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         def __init__(self):
             self.rect = pygame.Rect(400, 300, 40, 40)
             self.speed = 5
-            self.hp = 5
-            self.max_hp = 5
+            self.hp = PLAYER_MAX_HP
+            self.max_hp = PLAYER_MAX_HP
             self.invincible_timer  = 0
             self.transition_lock   = 0   # ignore les portes juste après un changement de salle
             self.inventory = []
@@ -103,8 +117,8 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
         def take_damage(self, amount=1):
             if self.invincible_timer == 0:
-                self.hp -= amount
-                self.invincible_timer = 60
+                self.hp = max(0, self.hp - amount)
+                self.invincible_timer = 45
 
         def is_alive(self):
             return self.hp > 0
@@ -123,11 +137,11 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
         def apply_item(self, item_type):
             if item_type == "heart":
-                if self.hp < self.max_hp:   self.hp = min(self.max_hp, self.hp+1); return True
+                if self.hp < self.max_hp:   self.hp = min(self.max_hp, self.hp+HEART_HEAL); return True
                 elif len(self.inventory)<5: self.inventory.append("heart");        return True
                 return False
             boosts = {"speed":("speed",0.5),"damage_boost":("damage_boost",1),
-                      "speed_boost":("speed",0.75),"range_boost":("range_boost",80)}
+                      "speed_boost":("speed",0.75),"range_boost":("range_boost",150)}
             if item_type in boosts:
                 attr, val = boosts[item_type]; setattr(self, attr, getattr(self, attr)+val); return True
             if item_type in ["sword","crossbow","bow","magic_wand"]:
@@ -135,14 +149,17 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
         def use_inventory_item(self, index):
             if index < len(self.inventory) and self.inventory[index]=="heart" and self.hp < self.max_hp:
-                self.hp = min(self.max_hp, self.hp+1); self.inventory.pop(index)
+                self.hp = min(self.max_hp, self.hp+HEART_HEAL); self.inventory.pop(index)
 
         def draw_hp_bar(self, surface):
-            for i in range(self.max_hp):
-                x = 10 + i * 24
-                color = (220,50,50) if i < self.hp else (80,80,80)
-                pygame.draw.rect(surface, color,        (x, 10, 20, 20), border_radius=4)
-                pygame.draw.rect(surface, (255,255,255),(x, 10, 20, 20), 1, border_radius=4)
+            bar_x, bar_y = 10, 10
+            bar_w, bar_h = 210, 20
+            ratio = max(0, self.hp / self.max_hp)
+            pygame.draw.rect(surface, (55, 20, 25), (bar_x, bar_y, bar_w, bar_h), border_radius=6)
+            pygame.draw.rect(surface, (220, 45, 55), (bar_x, bar_y, int(bar_w * ratio), bar_h), border_radius=6)
+            pygame.draw.rect(surface, (255,255,255), (bar_x, bar_y, bar_w, bar_h), 2, border_radius=6)
+            hp_text = font_hud.render(str(int(self.hp)) + " / " + str(self.max_hp), True, WHITE)
+            surface.blit(hp_text, (bar_x + bar_w + 8, bar_y - 2))
 
         def move(self, keys, game_map):
             if self.invincible_timer > 0:
@@ -205,7 +222,10 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                             else:                                      self.rect.top    = door_rect.bottom
 
         def draw(self):
-            screen.blit(assets["player"], self.rect)
+            # Petit effet de respiration pour que le joueur paraisse vivant.
+            pulse = 2 if pygame.time.get_ticks() // 220 % 2 == 0 else 0
+            draw_rect = self.rect.inflate(pulse, pulse)
+            screen.blit(assets["player"], draw_rect)
             if self.attack_timer > 0 and self.attack_rect is not None:
                 slash = pygame.Surface((70, 70), pygame.SRCALPHA)
                 color = (240, 240, 255, 180)
@@ -215,28 +235,35 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                 elif self.attack_direction == (0,  1): pygame.draw.arc(slash, color, (10,10,50,50), 3.4, 5.9, 4); screen.blit(slash, (self.rect.centerx-35, self.rect.bottom-20))
 
         def draw_inventory(self, surface, assets):
-            slot_size, spacing, slots = 30, 5, 5
+            slot_size, spacing, slots = 30, 5, 8
             start_x, y = 10, 562
+            weapon_slots = 4
             for i in range(slots):
                 x = start_x + i * (slot_size + spacing)
                 slot_rect = pygame.Rect(x, y, slot_size, slot_size)
                 pygame.draw.rect(surface, (40,40,45),      slot_rect, border_radius=6)
-                pygame.draw.rect(surface, (220,220,220),   slot_rect, 2, border_radius=6)
-                if i == 0 and self.weapon is not None:
-                    if self.weapon in assets:
-                        surface.blit(assets[self.weapon], slot_rect)
+                border_color = (255, 230, 120) if i < len(self.weapons) and self.weapons[i] == self.weapon else (220,220,220)
+                pygame.draw.rect(surface, border_color, slot_rect, 2, border_radius=6)
+
+                # Les 4 premieres cases affichent les armes possedees.
+                if i < weapon_slots and i < len(self.weapons):
+                    weapon = self.weapons[i]
+                    if weapon in assets:
+                        surface.blit(assets[weapon], slot_rect)
                     else:
-                        ltr = pygame.font.Font(None, 22).render(self.weapon[0].upper(), True, (255,255,255))
+                        ltr = pygame.font.Font(None, 22).render(weapon[0].upper(), True, (255,255,255))
                         surface.blit(ltr, ltr.get_rect(center=slot_rect.center))
-                item_index = i - 1
-                if i > 0 and item_index < len(self.inventory):
+
+                # Les cases restantes gardent les objets consommables.
+                item_index = i - weapon_slots
+                if i >= weapon_slots and item_index < len(self.inventory):
                     if self.inventory[item_index] == "heart":
                         pygame.draw.rect(surface, (220,40,70),
                                          pygame.Rect(x+8, y+8, slot_size-16, slot_size-16), border_radius=6)
 
         def sword_attack(self, dx, dy, enemies):
             self.attack_direction = (dx, dy)
-            attack_size = 45 + self.range_boost // 4
+            attack_size = 55 + self.range_boost // 3
             if dx == 1:   self.attack_rect = pygame.Rect(self.rect.right,          self.rect.centery-15, attack_size, 30)
             elif dx == -1: self.attack_rect = pygame.Rect(self.rect.left-attack_size, self.rect.centery-15, attack_size, 30)
             elif dy == 1:  self.attack_rect = pygame.Rect(self.rect.centerx-15, self.rect.bottom,          30, attack_size)
@@ -244,9 +271,9 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
             self.attack_timer = 6
             for enemy in enemies:
                 if enemy.hp > 0 and self.attack_rect.colliderect(enemy.rect):
-                    enemy.hp -= 1 + self.damage_boost
-                    enemy.rect.x += dx * 25
-                    enemy.rect.y += dy * 25
+                    enemy.hp -= 2 + self.damage_boost
+                    enemy.rect.x += dx * 32
+                    enemy.rect.y += dy * 32
 
     # ──────────────────────────────────────────────────────────────
     class Bullet:
@@ -282,11 +309,30 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         def draw(self):
             pygame.draw.circle(screen, (170, 90, 255), (self.x, self.y), self.radius, 3)
 
+    class EnemyBullet:
+        def __init__(self, x, y, dx, dy, damage=1, color=(255, 90, 70), size=8, speed=4):
+            length = max(1, (dx*dx + dy*dy) ** 0.5)
+            self.rect = pygame.Rect(x - size//2, y - size//2, size, size)
+            self.dx = dx / length
+            self.dy = dy / length
+            self.damage = damage
+            self.color = color
+            self.speed = speed
+
+        def update(self):
+            self.rect.x += self.dx * self.speed
+            self.rect.y += self.dy * self.speed
+
+        def draw(self):
+            pygame.draw.circle(screen, self.color, self.rect.center, self.rect.width//2)
+
     # ──────────────────────────────────────────────────────────────
     #  State
     # ──────────────────────────────────────────────────────────────
     player = Player()
     bullets, explosions = [], []
+    enemy_bullets = []
+    warning_circles = []
 
     current_level = 1
     game_map = Map(level=current_level)
@@ -318,6 +364,28 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         for enemy in game_map.current_room.enemies:
             if enemy.hp > 0 and explosion_rect.colliderect(enemy.rect):
                 enemy.hp -= 2 + player.damage_boost
+
+    def create_enemy_burst(x, y, radius=70, damage=8):
+        warning_circles.append([x, y, radius, 14])
+        burst_rect = pygame.Rect(x-radius, y-radius, radius*2, radius*2)
+        if burst_rect.colliderect(player.rect):
+            player.take_damage(damage)
+
+    def collect_enemy_attacks():
+        for enemy in game_map.current_room.enemies:
+            if enemy.hp <= 0:
+                continue
+            shot = getattr(enemy, "pending_shot", None)
+            if shot:
+                x, y, dx, dy, damage, color, size = shot
+                enemy_bullets.append(EnemyBullet(x, y, dx, dy, damage, color, size))
+                enemy.pending_shot = None
+            for ring_shot in getattr(enemy, "pending_ring", []):
+                x, y, dx, dy, damage, color, size = ring_shot
+                enemy_bullets.append(EnemyBullet(x, y, dx, dy, damage, color, size, speed=3.6))
+            if getattr(enemy, "pending_burst", False):
+                create_enemy_burst(enemy.rect.centerx, enemy.rect.centery, 80, 8)
+                enemy.pending_burst = False
 
     def show_level_transition(level):
         screen.fill((10, 5, 20))
@@ -402,11 +470,11 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
                 elif player.weapon == "bow":
                     bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy,
-                                          1+player.damage_boost, 500+player.range_boost,
+                                          1+player.damage_boost, 520+player.range_boost,
                                           (120,220,120), 8))
-                    player.rect.x -= dx * 35; player._resolve_collisions(game_map, "x")
-                    player.rect.y -= dy * 35; player._resolve_collisions(game_map, "y")
-                    shoot_cooldown = 18
+                    player.rect.x -= dx * BOW_KNOCKBACK; player._resolve_collisions(game_map, "x")
+                    player.rect.y -= dy * BOW_KNOCKBACK; player._resolve_collisions(game_map, "y")
+                    shoot_cooldown = 15
 
                 elif player.weapon == "magic_wand":
                     bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy,
@@ -443,6 +511,20 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
         # ── Update map (ennemis, portail) ─────────────────────────
         game_map.update(player)
+        collect_enemy_attacks()
+
+        for enemy_bullet in enemy_bullets[:]:
+            enemy_bullet.update()
+            if not screen.get_rect().colliderect(enemy_bullet.rect):
+                enemy_bullets.remove(enemy_bullet)
+                continue
+            if enemy_bullet.rect.colliderect(player.rect):
+                player.take_damage(enemy_bullet.damage)
+                enemy_bullets.remove(enemy_bullet)
+                continue
+            if any(enemy_bullet.rect.colliderect(w) for w in wall_rects):
+                enemy_bullets.remove(enemy_bullet)
+                continue
 
         # ── Passage au niveau suivant ─────────────────────────────
         if game_map.next_level_triggered:
@@ -451,6 +533,8 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
             game_map = Map(level=current_level)
             bullets.clear()
             explosions.clear()
+            enemy_bullets.clear()
+            warning_circles.clear()
             player.rect.center = (WIDTH//2, HEIGHT//2)
             player.transition_lock = 0
             score += current_level * 500
@@ -461,7 +545,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         WEAPON_LABELS = {"sword":"Epee : attaque courte","crossbow":"Arbalete : tir pénétrant",
                          "bow":"Arc : tire et propulse","magic_wand":"Baguette : explosif de zone",
                          "damage_boost":"Dégâts augmentés","speed_boost":"Vitesse augmentée",
-                         "range_boost":"Portée augmentée"}
+                         "range_boost":"Portée augmentée","heart":"Soin récupéré"}
 
         def try_open_chest(chest):
             nonlocal pickup_message, pickup_message_timer
@@ -470,10 +554,19 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                 chest.open_timer += 1
                 if chest.open_timer >= 15:
                     reward = chest.open()
+                    # Evite de donner deux fois la meme arme.
+                    if reward in player.weapons:
+                        reward = random_boost_reward(player)
                     player.apply_item(reward)
                     pickup_message, pickup_message_timer = WEAPON_LABELS.get(reward, reward), 180
             else:
                 chest.open_timer = 0
+
+        def random_boost_reward(player):
+            missing_weapons = [w for w in ["sword","crossbow","bow","magic_wand"] if w not in player.weapons]
+            if missing_weapons and len(player.weapons) < 2:
+                return missing_weapons[0]
+            return random.choice(["heart","heart","damage_boost","speed_boost","range_boost"])
 
         if game_map.current_room.chest:
             try_open_chest(game_map.current_room.chest)
@@ -490,7 +583,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         # ── Collisions joueur / ennemis ───────────────────────────
         for enemy in game_map.current_room.enemies:
             if enemy.hp > 0 and player.rect.colliderect(enemy.rect):
-                player.take_damage(1)
+                player.take_damage(getattr(enemy, "touch_damage", CONTACT_DAMAGE))
 
         # ── Game Over ─────────────────────────────────────────────
         if not player.is_alive():
@@ -518,9 +611,17 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         draw_extra_hud(screen, player, game_map, score, pickup_message, pickup_message_timer)
         player.draw()
         for bullet in bullets: bullet.draw()
+        for enemy_bullet in enemy_bullets:
+            enemy_bullet.draw()
         for explosion in explosions[:]:
             explosion.update(); explosion.draw()
             if explosion.timer <= 0: explosions.remove(explosion)
+        for warning in warning_circles[:]:
+            x, y, radius, timer = warning
+            pygame.draw.circle(screen, (255, 80, 80), (x, y), radius, 2)
+            warning[3] -= 1
+            if warning[3] <= 0:
+                warning_circles.remove(warning)
 
         pygame.display.flip()
 
