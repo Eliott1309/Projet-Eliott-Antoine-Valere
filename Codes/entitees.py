@@ -41,9 +41,11 @@ class Enemy:
         dy = player.rect.centery - self.rect.centery
         return math.hypot(dx, dy), dx, dy
 
+    #déplace l'ennemi sans le laisser entrer dans les murs
     def move(self, dx, dy, wall_rects):
         if dx == 0 and dy == 0:
             return
+
         length = math.hypot(dx, dy)
         dx, dy = dx / length, dy / length
 
@@ -52,18 +54,22 @@ class Enemy:
             if self.rect.colliderect(wall):
                 if dx > 0:
                     self.rect.right = wall.left
-            elif dx < 0:
-                self.rect.left = wall.right
-            self.wander_dir = self.random_dir()
-            break
-
+                elif dx < 0:
+                    self.rect.left = wall.right
+                self.wander_dir = self.random_dir()
+                break
 
         self.rect.y += dy * self.speed
         for wall in wall_rects:
             if self.rect.colliderect(wall):
-                self.rect.y = self.rect.y - dy * self.speed
+                if dy > 0:
+                    self.rect.bottom = wall.top
+                elif dy < 0:
+                    self.rect.top = wall.bottom
                 self.wander_dir = self.random_dir()
                 break
+
+
 
     def update(self, player, wall_rects=None):
         if wall_rects is None:

@@ -43,7 +43,7 @@ def load_assets():
     assets["speed"] = pygame.image.load(os.path.join(base, "assets", "speed.png")).convert_alpha()
 
     assets["heart"] = pygame.transform.smoothscale(assets["heart"], (25, 25))
-    assets["speed"] = pygame.transform.smoothscale(assets["speed"], (25, 25))
+    assets["speed"] = pygame.transform.smoothscale(assets["speed"], (50, 50))
 
     load_image("chest", "chest.png", True)
     load_image("sword", "sword.png", True)

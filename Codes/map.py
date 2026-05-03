@@ -240,6 +240,26 @@ class Room:
             ]
         return self._wall_cache
 
+
+    #replace un ennemi s'il est coincé dans un mur
+    def fix_enemy_position(self, enemy):
+        wall_rects = self.get_wall_rects() + list(self.get_door_rects().values())
+
+        if not any(enemy.rect.colliderect(wall) for wall in wall_rects):
+            return
+
+        free_tiles = [
+            (c * TILE_SIZE + TILE_SIZE//2, r * TILE_SIZE + TILE_SIZE//2)
+            for r in range(2, ROWS-2)
+            for c in range(2, COLS-2)
+            if self.grid[r][c] == 0
+        ]
+
+        if free_tiles:
+            x, y = random.choice(free_tiles)
+            enemy.rect.center = (x, y)
+
+
     def get_door_rects(self):
         mid_col = COLS // 2
         mid_row = ROWS // 2
@@ -262,10 +282,13 @@ class Room:
         if self.cleared:
             return
 
-        wall_rects = self.get_wall_rects()
+        wall_rects = self.get_wall_rects() + list(self.get_door_rects().values())
+
         for enemy in self.enemies:
             if enemy.hp > 0:
                 enemy.update(player, wall_rects)
+                self.fix_enemy_position(enemy)
+
 
         if all(e.hp <= 0 for e in self.enemies):
             self.cleared = True
