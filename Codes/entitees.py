@@ -50,9 +50,13 @@ class Enemy:
         self.rect.x += dx * self.speed
         for wall in wall_rects:
             if self.rect.colliderect(wall):
-                self.rect.x = self.rect.x - dx * self.speed
-                self.wander_dir = self.random_dir()
-                break
+                if dx > 0:
+                    self.rect.right = wall.left
+            elif dx < 0:
+                self.rect.left = wall.right
+            self.wander_dir = self.random_dir()
+            break
+
 
         self.rect.y += dy * self.speed
         for wall in wall_rects:
