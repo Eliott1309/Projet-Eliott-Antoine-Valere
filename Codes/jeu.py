@@ -76,7 +76,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     PLAYER_MAX_HP = 100
     HEART_HEAL = 30
     CONTACT_DAMAGE = 6
-    BOW_KNOCKBACK = 24
+    BOW_KNOCKBACK = 100
 
     # ──────────────────────────────────────────────────────────────
     def draw_extra_hud(surface, player, game_map, score, pickup_message, pickup_message_timer):

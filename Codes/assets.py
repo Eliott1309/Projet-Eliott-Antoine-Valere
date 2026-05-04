@@ -50,12 +50,14 @@ def load_assets():
     load_image("crossbow", "crossbow.png", True)
     load_image("bow", "bow.png", True)
     load_image("magic_wand", "magic_wand.png", True)
+    load_image("arrow", "arrow.png", True)
 
     assets["chest"] = pygame.transform.smoothscale(assets["chest"], (36, 36))
     assets["sword"] = pygame.transform.smoothscale(assets["sword"], (30, 30))
     assets["crossbow"] = pygame.transform.smoothscale(assets["crossbow"], (30, 30))
     assets["bow"] = pygame.transform.smoothscale(assets["bow"], (30, 30))
     assets["magic_wand"] = pygame.transform.smoothscale(assets["magic_wand"], (30, 30))
+    assets["arrow"] = pygame.transform.smoothscale(assets["arrow"], (30, 15))
 
     assets["footstep"] = pygame.mixer.Sound(os.path.join(base, "assets", "footstep.wav"))
     assets["footstep"].set_volume(0.1)
