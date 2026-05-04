@@ -68,6 +68,22 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
     current_bg = load_bg(1, base, WIDTH, HEIGHT)
 
+    score = 0
+    counted_dead_enemies = set()
+    pickup_message = ""
+    pickup_message_timer = 0
+
+    quest_transition = False
+    quest_text_index = 0
+    quest_message = ("Vous devez sauver la princesse. Tuez d'abord les ennemis "
+                     "dans les salles environnantes avant de pouvoir la retrouver.")
+    typewriter_channel = None
+    shoot_cooldown = 0
+    running = True
+
+    extra_lights = []
+    extra_lights_timer = []
+
     while running:
         clock.tick(60)
         game_surface.fill(BLACK)
@@ -178,14 +194,14 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                 elif player.weapon == "crossbow":
                     bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy,
                                           3+player.damage_boost, 800+player.range_boost,
-                                          (230,230,230), 10, pierce=3))
+                                          (230,230,230), 10, pierce=3, image=assets["arrow"]))
                     particles.emit_sparks(player.rect.centerx, player.rect.centery, count=4, color=(200,200,220))
                     shoot_cooldown = 75
 
                 elif player.weapon == "bow":
                     bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy,
                                           1+player.damage_boost, 520+player.range_boost,
-                                          (120,220,120), 8))
+                                          (120,220,120), 8, image=assets["arrow"]))
                     player.rect.x -= dx * BOW_KNOCKBACK; player._resolve_collisions(game_map, "x")
                     player.rect.y -= dy * BOW_KNOCKBACK; player._resolve_collisions(game_map, "y")
                     shoot_cooldown = 15
@@ -300,5 +316,4 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
 if __name__ == "__main__":
     lancer_jeu()
-
 

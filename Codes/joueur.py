@@ -1,4 +1,4 @@
-﻿import random
+import random
 import pygame
 
 WIDTH = 800
@@ -87,7 +87,7 @@ class Player:
         pygame.draw.rect(surface, (55, 20, 25), (bar_x, bar_y, bar_w, bar_h), border_radius=6)
         pygame.draw.rect(surface, (220, 45, 55), (bar_x, bar_y, int(bar_w * ratio), bar_h), border_radius=6)
         pygame.draw.rect(surface, (255,255,255), (bar_x, bar_y, bar_w, bar_h), 2, border_radius=6)
-        hp_text = self.font_hud.render(str(int(self.hp)) + " / " + str(self.max_hp), True, WHITE)
+        hp_text = self.font_hud.render(str(int(self.hp)) + " / " + str(self.max_hp), True, (255, 255, 255))
         surface.blit(hp_text, (bar_x + bar_w + 8, bar_y - 2))
 
     def move(self, keys, game_map):
@@ -169,14 +169,16 @@ class Player:
     def draw(self):
         pulse = 2 if pygame.time.get_ticks() // 220 % 2 == 0 else 0
         draw_rect = self.rect.inflate(pulse, pulse)
+        frames = self.assets.get("player_anim", [self.assets["player"]])
+        frame = frames[pygame.time.get_ticks() // 180 % len(frames)]
 
         # Clignotement rouge quand invincible
         if self.invincible_timer > 0 and (self.invincible_timer // 4) % 2 == 0:
-            tinted = self.assets["player"].copy()
+            tinted = frame.copy()
             tinted.fill((255, 80, 80, 160), special_flags=pygame.BLEND_RGBA_MULT)
             self.game_surface.blit(tinted, draw_rect)
         else:
-            self.game_surface.blit(self.assets["player"], draw_rect)
+            self.game_surface.blit(frame, draw_rect)
 
         if self.attack_timer > 0 and self.attack_rect is not None:
             slash = pygame.Surface((70, 70), pygame.SRCALPHA)

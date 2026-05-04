@@ -193,7 +193,11 @@ class Enemy:
         }.get(self.kind, "enemy")
         if sprite_key not in assets:
             sprite_key = sprite_key.replace(suffix, "")
-        screen.blit(assets.get(sprite_key, assets["enemy"]), draw_rect)
+        frames = assets.get(sprite_key + "_anim")
+        if frames is None:
+            frames = assets.get("enemy_anim", [assets["enemy"]])
+        frame = frames[pygame.time.get_ticks() // 180 % len(frames)]
+        screen.blit(frame, draw_rect)
 
         # Petite barre de vie au-dessus
         max_hp = getattr(self, "max_hp", self.hp + 2)
@@ -265,7 +269,9 @@ class Boss(Enemy):
             pygame.draw.circle(screen, (255, 220, 120), self.rect.center, 48, 3)
         sprite_key = "boss_warden" if self.boss_kind == "warden" else "boss_sorcerer"
         if sprite_key in assets:
-            screen.blit(assets[sprite_key], self.rect)
+            frames = assets.get(sprite_key + "_anim", [assets[sprite_key]])
+            frame = frames[pygame.time.get_ticks() // 220 % len(frames)]
+            screen.blit(frame, self.rect)
         else:
             pygame.draw.ellipse(screen, color, self.rect)
             pygame.draw.ellipse(screen, (255,255,255), self.rect, 2)

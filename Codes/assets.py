@@ -14,6 +14,14 @@ def load_assets():
             assets[name] = pygame.image.load(path).convert_alpha()
         else:
             assets[name] = pygame.image.load(path).convert()
+
+    def make_animation(name):
+        image = assets[name]
+        w, h = image.get_size()
+        frame_1 = image
+        frame_2 = pygame.transform.smoothscale(image, (w, max(1, h - 3)))
+        frame_2 = pygame.transform.smoothscale(frame_2, (w, h))
+        assets[name + "_anim"] = [frame_1, frame_2]
     
     load_image("floor", "floor.png", False)
     load_image("wall", "wall.png", True)
@@ -58,6 +66,12 @@ def load_assets():
     assets["bow"] = pygame.transform.smoothscale(assets["bow"], (30, 30))
     assets["magic_wand"] = pygame.transform.smoothscale(assets["magic_wand"], (30, 30))
     assets["arrow"] = pygame.transform.smoothscale(assets["arrow"], (30, 15))
+
+    for key in [
+        "player", "enemy", "enemy_stalker", "enemy_shooter", "enemy_charger",
+        "enemy_bomber", "boss_warden", "boss_sorcerer"
+    ]:
+        make_animation(key)
 
     assets["footstep"] = pygame.mixer.Sound(os.path.join(base, "assets", "footstep.wav"))
     assets["footstep"].set_volume(0.1)

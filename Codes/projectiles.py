@@ -4,7 +4,7 @@
 
 class Bullet:
     def __init__(self, x, y, dx, dy, damage=1, max_distance=800,
-                 color=(255, 255, 255), size=10, pierce=1, magic=False):
+                 color=(255, 255, 255), size=10, pierce=1, magic=False, image=None):
         self.rect = pygame.Rect(x, y, size, size)
         self.dx, self.dy = dx, dy
         self.speed = 8
@@ -14,6 +14,7 @@ class Bullet:
         self.color = color
         self.pierce = pierce
         self.magic  = magic
+        self.image = image
         self.hit_enemies = set()
         self.trail = []
 
@@ -33,7 +34,18 @@ class Bullet:
             s = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
             pygame.draw.circle(s, (*self.color, alpha), (size, size), size)
             surface.blit(s, (tx - size, ty - size))
-        pygame.draw.rect(surface, self.color, self.rect)
+        if self.image:
+            angle = 0
+            if self.dx < 0:
+                angle = 180
+            elif self.dy < 0:
+                angle = 90
+            elif self.dy > 0:
+                angle = -90
+            image = pygame.transform.rotate(self.image, angle)
+            surface.blit(image, image.get_rect(center=self.rect.center))
+        else:
+            pygame.draw.rect(surface, self.color, self.rect)
 
 class Explosion:
     def __init__(self, x, y):
