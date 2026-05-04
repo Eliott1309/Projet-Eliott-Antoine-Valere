@@ -1,13 +1,13 @@
-import pygame
+﻿import pygame
 import random
 import math
 
-DETECTION_RADIUS = 210   # pixels — en dessous : l'ennemi commence à chasser
+DETECTION_RADIUS = 210   # pixels â€” en dessous : l'ennemi commence Ã  chasser
 WANDER_CHANGE    = 80    # frames entre deux changements de direction en errance
 
 
 class Enemy:
-    # Comportements possibles (tirés au sort à la création)
+    # Comportements possibles (tirÃ©s au sort Ã  la crÃ©ation)
     BEHAVIORS = ["chaser", "patrol", "cautious"]
 
     def __init__(self, x=400, y=300):
@@ -27,7 +27,7 @@ class Enemy:
         self.alert_timer   = 0           # frames de mise en alerte avant d'attaquer
         self.wander_timer  = 0           # compteur pour changer de direction
         self.wander_dir    = self.random_dir()
-        self.patrol_points = []          # défini après spawn dans map.py si besoin
+        self.patrol_points = []          # dÃ©fini aprÃ¨s spawn dans map.py si besoin
         self.patrol_index  = 0
         self.spawn_x       = x
         self.spawn_y       = y
@@ -41,7 +41,7 @@ class Enemy:
         dy = player.rect.centery - self.rect.centery
         return math.hypot(dx, dy), dx, dy
 
-    #déplace l'ennemi sans le laisser entrer dans les murs
+    #dÃ©place l'ennemi sans le laisser entrer dans les murs
     def move(self, dx, dy, wall_rects):
         if dx == 0 and dy == 0:
             return
@@ -281,3 +281,4 @@ class Boss(Enemy):
 
 def SCREEN_CENTER_X():
     return 400
+

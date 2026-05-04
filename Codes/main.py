@@ -1,4 +1,4 @@
-import pygame
+﻿import pygame
 import sys
 import subprocess
 from assets import load_assets
@@ -23,7 +23,7 @@ WIDTH, HEIGHT = 1080,720
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu 
 
-base = os.path.dirname(os.path.abspath(__file__))  # ← juste avant les ressources
+base = os.path.dirname(os.path.abspath(__file__))  # â† juste avant les ressources
 
 background = pygame.image.load(os.path.join(base, "assets", "bg.jpeg"))
 background = pygame.transform.scale(background, (WIDTH, HEIGHT))

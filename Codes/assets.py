@@ -1,4 +1,4 @@
-import pygame
+﻿import pygame
 import os
 
 TILE_SIZE = 40
@@ -81,3 +81,4 @@ def load_assets():
             assets[f"floor_lv{level}"] = pygame.transform.smoothscale(assets[f"floor_lv{level}"], (TILE_SIZE, TILE_SIZE))
     
     return assets
+
