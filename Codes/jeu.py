@@ -363,6 +363,17 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     ending_message = "Vous avez sauvé la princesse. Le royaume est enfin libéré."
     princess_rect = pygame.Rect(WIDTH//2 - 25, HEIGHT//2 - 35, 50, 70)
 
+    def load_bg(level):
+        if level == 2:
+            name = "bg2.jpeg"  # ou bg2.png selon ton extension
+        elif level == 3:
+            name = "bg3.jpeg"
+        else:
+            name = "bg.jpeg"
+        img = pygame.image.load(os.path.join(base, "assets", name))
+        return pygame.transform.scale(img, (WIDTH, HEIGHT))
+
+    current_bg = load_bg(1)
 
     score = 0
     counted_dead_enemies = set()
@@ -429,6 +440,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     while running:
         clock.tick(60)
         screen.fill(BLACK)
+        screen.blit(current_bg, (0, 0))
         keys = pygame.key.get_pressed()
 
         if pickup_message_timer > 0:
@@ -656,6 +668,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
         # ── Game Over ─────────────────────────────────────────────
         if not player.is_alive():
             screen.fill(BLACK)
+            screen.blit(current_bg, (0, 0))
             go_surf = font_game_over.render("GAME OVER", True, RED)
             rs_surf = font_restart.render("Appuie sur ECHAP pour quitter", True, WHITE)
             sc_surf = font_restart.render(f"Score final : {score}", True, (255, 230, 120))

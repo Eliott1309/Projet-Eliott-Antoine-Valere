@@ -62,4 +62,13 @@ def load_assets():
 
     assets["typewriter"] = pygame.mixer.Sound(os.path.join(base, "assets", "typewriter.mp3"))
     assets["typewriter"].set_volume(0.25)
+    '''for level in [2, 3]:
+        for kind in ["stalker", "shooter", "charger", "bomber"]:
+            filename = f"enemy_{kind}_{level}.png"
+            path = os.path.join(base, "assets", filename)
+            if os.path.exists(path):
+                key = f"enemy_{kind}_lv{level}"
+                assets[key] = pygame.image.load(path).convert_alpha()
+                assets[key] = pygame.transform.smoothscale(assets[key], (47, 47))'''   
+    
     return assets
