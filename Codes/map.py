@@ -348,7 +348,8 @@ class Room:
                         pygame.draw.line(screen, (180, 40, 40), (x+8, y+8), (x+TILE_SIZE-8, y+TILE_SIZE-8), 3)
                         pygame.draw.line(screen, (180, 40, 40), (x+TILE_SIZE-8, y+8), (x+8, y+TILE_SIZE-8), 3)
                 else:
-                    screen.blit(assets["floor"], (x, y))
+                    floor_key = f"floor_lv{self.level}" if f"floor_lv{self.level}" in assets else "floor"
+                    screen.blit(assets[floor_key], (x, y))
 
     def _draw_decorations(self, screen):
         tick = pygame.time.get_ticks()

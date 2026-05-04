@@ -365,9 +365,9 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
     def load_bg(level):
         if level == 2:
-            name = "bg2.jpeg"  # ou bg2.png selon ton extension
+            name = "bg2.png"  # ou bg2.png selon ton extension
         elif level == 3:
-            name = "bg3.jpeg"
+            name = "bg3.png"
         else:
             name = "bg.jpeg"
         img = pygame.image.load(os.path.join(base, "assets", name))
@@ -608,6 +608,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                 player.rect.center = (WIDTH//2, HEIGHT - 80)
             else:
                 current_level += 1
+                current_bg = load_bg(current_level)
                 show_level_transition(current_level)
                 game_map = Map(level=current_level)
                 bullets.clear()
