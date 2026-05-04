@@ -134,7 +134,7 @@ class DynamicLighting:
             return self._light_cache[radius]
         texture = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
         for r in range(radius, 0, -1):
-            alpha = int(200 * ((r / radius) ** 2.2))
+            alpha = int(200 * (((radius - r) / radius) ** 2.2))
             pygame.draw.circle(texture, (0, 0, 0, alpha), (radius, radius), r)
         self._light_cache[radius] = texture
         return texture
@@ -142,7 +142,7 @@ class DynamicLighting:
     def draw(self, screen, player, extra_lights=None):
         self._surface.fill((0, 0, 0, 165))
         px, py = player.rect.center
-        self._surface.blit(self._get_light_texture(230), (px - 230, py - 230), special_flags=pygame.BLEND_RGBA_SUB)
+        self._surface.blit(self._get_light_texture(400), (px - 400, py - 400), special_flags=pygame.BLEND_RGBA_SUB)
         if extra_lights:
             for lx, ly, radius, _color in extra_lights:
                 self._surface.blit(self._get_light_texture(radius), (lx - radius, ly - radius), special_flags=pygame.BLEND_RGBA_SUB)
