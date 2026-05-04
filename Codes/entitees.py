@@ -183,12 +183,16 @@ class Enemy:
 
         bob = 1 if pygame.time.get_ticks() // 180 % 2 == 0 else -1
         draw_rect = self.rect.move(0, bob)
+        level = getattr(self, "level", 1)
+        suffix = f"_{level}" if level in (2, 3) else ""
         sprite_key = {
-            "stalker": "enemy_stalker",
-            "shooter": "enemy_shooter",
-            "charger": "enemy_charger",
-            "bomber": "enemy_bomber",
+            "stalker": f"enemy_stalker{suffix}",
+            "shooter": f"enemy_shooter{suffix}",
+            "charger": f"enemy_charger{suffix}",
+            "bomber":  f"enemy_bomber{suffix}",
         }.get(self.kind, "enemy")
+        if sprite_key not in assets:
+            sprite_key = sprite_key.replace(suffix, "")
         screen.blit(assets.get(sprite_key, assets["enemy"]), draw_rect)
 
         # Petite barre de vie au-dessus

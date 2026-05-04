@@ -181,6 +181,7 @@ class Room:
                 if free_tiles:
                     ex, ey = random.choice(free_tiles)
                     enemy = Enemy(ex, ey)
+                    enemy.level = self.level
                     enemy.hp     = 2 + level
                     enemy.max_hp = enemy.hp
                     enemy.speed  = min(1.8 + level * 0.28, 4.0)

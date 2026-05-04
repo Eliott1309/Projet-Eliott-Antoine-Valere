@@ -69,6 +69,13 @@ def load_assets():
             if os.path.exists(path):
                 key = f"enemy_{kind}_lv{level}"
                 assets[key] = pygame.image.load(path).convert_alpha()
-                assets[key] = pygame.transform.smoothscale(assets[key], (47, 47))'''   
+                assets[key] = pygame.transform.smoothscale(assets[key], (47, 47))'''  
+
+    # Avant le return dans load_assets()
+    for level, filename in [(2, "bg2.png"), (3, "bg3.png")]:
+        path = os.path.join(base, "assets", filename)
+        if os.path.exists(path):
+            assets[f"floor_lv{level}"] = pygame.image.load(path).convert()
+            assets[f"floor_lv{level}"] = pygame.transform.smoothscale(assets[f"floor_lv{level}"], (TILE_SIZE, TILE_SIZE))
     
     return assets
