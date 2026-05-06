@@ -20,6 +20,9 @@ class Player:
         self.weapons = []
         self.selected_weapon_index = 0
         self.damage_boost = 0
+        self.armor_hp = 0
+        self.max_armor_hp = 50
+        self.has_armor = False
         self.range_boost  = 0
         self.attack_rect  = None
         self.attack_timer = 0
@@ -37,13 +40,22 @@ class Player:
 
     def take_damage(self, amount=1):
         if self.invincible_timer == 0:
-            self.hp = max(0, self.hp - amount)
+            if self.has_armor and self.armor_hp > 0:
+                self.armor_hp -= amount
+                if self.armor_hp <= 0:
+                    self.armor_hp = 0
+                self.particles.emit_sparks(
+                    self.rect.centerx, self.rect.centery,
+                    count=6, color=(80, 160, 255)
+                )
+            else:
+                self.hp = max(0, self.hp - amount)
+                self.shake.trigger(intensity=7, duration=12)
+                self.particles.emit_sparks(
+                    self.rect.centerx, self.rect.centery,
+                    count=8, color=(220, 40, 40)
+                )
             self.invincible_timer = 45
-            self.shake.trigger(intensity=7, duration=12)
-            self.particles.emit_sparks(
-                self.rect.centerx, self.rect.centery,
-                count=8, color=(220, 40, 40)
-            )
 
     def is_alive(self):
         return self.hp > 0
@@ -75,7 +87,13 @@ class Player:
             return True
         if item_type in ["sword","crossbow","bow","magic_wand"]:
             self.add_weapon(item_type); return True
-
+        if item_type == "armor":
+            if not self.has_armor:
+                self.has_armor = True
+                self.armor_hp = self.max_armor_hp
+            else:
+                self.armor_hp = min(self.max_armor_hp, self.armor_hp + 25)
+            return True
     def use_inventory_item(self, index):
         if index < len(self.inventory) and self.inventory[index]=="heart" and self.hp < self.max_hp:
             self.hp = min(self.max_hp, self.hp+HEART_HEAL); self.inventory.pop(index)
@@ -89,6 +107,15 @@ class Player:
         pygame.draw.rect(surface, (255,255,255), (bar_x, bar_y, bar_w, bar_h), 2, border_radius=6)
         hp_text = self.font_hud.render(str(int(self.hp)) + " / " + str(self.max_hp), True, (255, 255, 255))
         surface.blit(hp_text, (bar_x + bar_w + 8, bar_y - 2))
+        #barre armure
+        if self.has_armor:
+            armor_y = bar_y + bar_h + 4
+            armor_ratio = max(0, self.armor_hp / self.max_armor_hp)
+            pygame.draw.rect(surface, (20, 40, 80), (bar_x, armor_y, bar_w, bar_h), border_radius=6)
+            pygame.draw.rect(surface, (60, 140, 255), (bar_x, armor_y, int(bar_w * armor_ratio), bar_h), border_radius=6)
+            pygame.draw.rect(surface, (180, 210, 255), (bar_x, armor_y, bar_w, bar_h), 2, border_radius=6)
+            armor_text = self.font_hud.render(str(int(self.armor_hp)) + " / " + str(self.max_armor_hp), True, (180, 210, 255))
+            surface.blit(armor_text, (bar_x + bar_w + 8, armor_y - 2))
 
     def move(self, keys, game_map):
         if self.invincible_timer > 0:
@@ -169,7 +196,8 @@ class Player:
     def draw(self):
         pulse = 2 if pygame.time.get_ticks() // 220 % 2 == 0 else 0
         draw_rect = self.rect.inflate(pulse, pulse)
-        frames = self.assets.get("player_anim", [self.assets["player"]])
+        anim_key = "player_armor_anim" if self.has_armor and "player_armor_anim" in self.assets else "player_anim"
+        frames = self.assets.get(anim_key, [self.assets["player"]])
         frame = frames[pygame.time.get_ticks() // 180 % len(frames)]
 
         # Clignotement rouge quand invincible

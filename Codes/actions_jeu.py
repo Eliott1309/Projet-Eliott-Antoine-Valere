@@ -86,7 +86,8 @@ def _draw_level_overlay(screen, overlay, title, subtitle, width, height, alpha):
 WEAPON_LABELS = {"sword": "Epee : attaque courte", "crossbow": "Arbalete : tir penetrant",
                  "bow": "Arc : tire et propulse", "magic_wand": "Baguette : explosif de zone",
                  "damage_boost": "Degats augmentes", "speed_boost": "Vitesse augmentee",
-                 "range_boost": "Portee augmentee", "heart": "Soin recupere"}
+                 "range_boost": "Portee augmentee", "heart": "Soin recupere",
+                 "armor": "Armure : +50 HP"}
 ITEM_LABELS = {"heart": "Coeur recupere", "speed": "Vitesse augmentee"}
 
 

@@ -35,6 +35,10 @@ def load_assets():
     assets["enemy"]  = pygame.transform.smoothscale(assets["enemy"],  (47, 47))
     assets["player"] = pygame.transform.smoothscale(assets["player"], (40, 40))
 
+    load_image("player_armor", "player_armor.png", True)
+    assets["player_armor"] = pygame.transform.smoothscale(assets["player_armor"], (40, 40))
+    make_animation("player_armor")
+
     load_image("enemy_stalker", "enemy_stalker.png", True)
     load_image("enemy_shooter", "enemy_shooter.png", True)
     load_image("enemy_charger", "enemy_charger.png", True)

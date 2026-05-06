@@ -58,7 +58,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     enemy_bullets = []
     warning_circles = []
 
-    current_level = 1
+    current_level = 6
     game_map = Map(level=current_level)
     game_finished = False
     ending_transition = False
