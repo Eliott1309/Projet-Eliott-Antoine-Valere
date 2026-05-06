@@ -6,7 +6,7 @@ from jeu import lancer_jeu
 import os
 base = os.path.dirname(os.path.abspath(__file__))
 
-
+#test
 def start():
     lancer_jeu()
 
