@@ -189,29 +189,37 @@ class Player:
             elif self.attack_direction == (0,  1): pygame.draw.arc(slash, color, (10,10,50,50), 3.4, 5.9, 4); self.game_surface.blit(slash, (self.rect.centerx-35, self.rect.bottom-20))
 
     def draw_inventory(self, surface, assets):
-        slot_size, spacing, slots = 30, 5, 8
-        start_x, y = 10, 562
-        weapon_slots = 4
-        for i in range(slots):
-            x = start_x + i * (slot_size + spacing)
-            slot_rect = pygame.Rect(x, y, slot_size, slot_size)
-            pygame.draw.rect(surface, (40,40,45),      slot_rect, border_radius=6)
-            border_color = (255, 230, 120) if i < len(self.weapons) and self.weapons[i] == self.weapon else (220,220,220)
+        slot_size, spacing = 30, 5
+        bottom_y = HEIGHT - 10  # ancrage bas de l'écran
+
+        #colonne armes 
+        weapon_x = 10
+        for i, weapon in enumerate(self.weapons):
+            y = bottom_y - (i + 1) * (slot_size + spacing)
+            slot_rect = pygame.Rect(weapon_x, y, slot_size, slot_size)
+
+            pygame.draw.rect(surface, (40, 40, 45), slot_rect, border_radius=6)
+            border_color = (255, 230, 120) if weapon == self.weapon else (220, 220, 220)
             pygame.draw.rect(surface, border_color, slot_rect, 2, border_radius=6)
 
-            if i < weapon_slots and i < len(self.weapons):
-                weapon = self.weapons[i]
-                if weapon in self.assets:
-                    surface.blit(self.assets[weapon], slot_rect)
-                else:
-                    ltr = pygame.font.Font(None, 22).render(weapon[0].upper(), True, (255,255,255))
-                    surface.blit(ltr, ltr.get_rect(center=slot_rect.center))
+            if weapon in self.assets:
+                surface.blit(self.assets[weapon], slot_rect)
+            else:
+                ltr = pygame.font.Font(None, 22).render(weapon[0].upper(), True, (255, 255, 255))
+                surface.blit(ltr, ltr.get_rect(center=slot_rect.center))
 
-            item_index = i - weapon_slots
-            if i >= weapon_slots and item_index < len(self.inventory):
-                if self.inventory[item_index] == "heart":
-                    pygame.draw.rect(surface, (220,40,70),
-                                     pygame.Rect(x+8, y+8, slot_size-16, slot_size-16), border_radius=6)
+        #colonne soins 
+        heal_x = WIDTH - slot_size - 10
+        heal_items = [item for item in self.inventory if item == "heart"]
+        for i, item in enumerate(heal_items):
+            y = bottom_y - (i + 1) * (slot_size + spacing)
+            slot_rect = pygame.Rect(heal_x, y, slot_size, slot_size)
+
+            pygame.draw.rect(surface, (40, 40, 45), slot_rect, border_radius=6)
+            pygame.draw.rect(surface, (220, 220, 220), slot_rect, 2, border_radius=6)
+            pygame.draw.rect(surface, (220, 40, 70),
+                            pygame.Rect(heal_x + 8, y + 8, slot_size - 16, slot_size - 16),
+                            border_radius=6)
 
     def sword_attack(self, dx, dy, enemies):
         self.attack_direction = (dx, dy)
