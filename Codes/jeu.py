@@ -28,6 +28,7 @@ def sauvegarder_partie(player, current_level, score):
         "damage_boost": player.damage_boost,
         "speed": player.speed,
         "range_boost": player.range_boost,
+        "inventory": player.inventory,
     }
     with open("sauvegarde.json", "w") as f:
         json.dump(data, f)
@@ -77,7 +78,9 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
 
 
     player = Player(keyboard_layout, assets, game_surface, font_hud, particles, shake, fade)
-    data = charger_partie()
+    data = None
+    if charger:
+        data = charger_partie()
     if data:
         player.hp = data["hp"]
         player.armor_hp = data["armor_hp"]
@@ -87,25 +90,27 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
         player.damage_boost = data["damage_boost"]
         player.speed = data["speed"]
         player.range_boost = data["range_boost"]
+        player.inventory = data.get("inventory", [])
         current_level = data["level"]
         score = data["score"]
         game_map = Map(level=current_level)
         current_bg = load_bg(current_level, base, WIDTH, HEIGHT)
+    else:
+        current_level = 1
+        game_map = Map(level=current_level)
+        current_bg = load_bg(1, base, WIDTH, HEIGHT)
+        score = 0
     bullets, explosions = [], []
     enemy_bullets = []
     warning_circles = []
-    #push
-    current_level = 1
-    game_map = Map(level=current_level)
+
     game_finished = False
     ending_transition = False
     ending_text_index = 0
     ending_message = "Vous avez sauve la princesse. Le royaume est enfin libere."
     princess_rect = pygame.Rect(WIDTH//2 - 25, HEIGHT//2 - 35, 50, 70)
 
-    current_bg = load_bg(1, base, WIDTH, HEIGHT)
 
-    score = 0
     counted_dead_enemies = set()
     pickup_message = ""
     pickup_message_timer = 0
