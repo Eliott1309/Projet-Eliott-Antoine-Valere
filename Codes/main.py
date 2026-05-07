@@ -124,7 +124,9 @@ while running:
                     pygame.quit()
                     lancer_jeu(keyboard_layout, assets)
                 elif btn.action == "load":
-                    print("Charger Partie")
+                    running = False
+                    pygame.quit()
+                    lancer_jeu(keyboard_layout, assets, charger=True)
                 elif btn.action == "options":
                     menu_state = "options"
                 elif btn.action == "quit":

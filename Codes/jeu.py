@@ -1,4 +1,5 @@
 ﻿import os
+import json
 import random
 import sys
 import pygame
@@ -15,8 +16,30 @@ from actions_jeu import (add_score_for_dead_enemies, collect_enemy_attacks,
 
 base = os.path.dirname(os.path.abspath(__file__))
 
+def sauvegarder_partie(player, current_level, score):
+    data = {
+        "level": current_level,
+        "score": score,
+        "hp": player.hp,
+        "armor_hp": player.armor_hp,
+        "has_armor": player.has_armor,
+        "weapons": player.weapons,
+        "weapon": player.weapon,
+        "damage_boost": player.damage_boost,
+        "speed": player.speed,
+        "range_boost": player.range_boost,
+    }
+    with open("sauvegarde.json", "w") as f:
+        json.dump(data, f)
 
-def lancer_jeu(keyboard_layout="azerty", assets=None):
+def charger_partie():
+    try:
+        with open("sauvegarde.json", "r") as f:
+            return json.load(f)
+    except:
+        return None
+
+def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
 
     pygame.init()
 
@@ -54,6 +77,20 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
 
 
     player = Player(keyboard_layout, assets, game_surface, font_hud, particles, shake, fade)
+    data = charger_partie()
+    if data:
+        player.hp = data["hp"]
+        player.armor_hp = data["armor_hp"]
+        player.has_armor = data["has_armor"]
+        player.weapons = data["weapons"]
+        player.weapon = data["weapon"]
+        player.damage_boost = data["damage_boost"]
+        player.speed = data["speed"]
+        player.range_boost = data["range_boost"]
+        current_level = data["level"]
+        score = data["score"]
+        game_map = Map(level=current_level)
+        current_bg = load_bg(current_level, base, WIDTH, HEIGHT)
     bullets, explosions = [], []
     enemy_bullets = []
     warning_circles = []
@@ -121,7 +158,10 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
                         ending_text_index = len(ending_message)
                     else:
                         running = False
-
+                if event.key == pygame.K_F5:
+                    sauvegarder_partie(player, current_level, score)
+                    pickup_message = "Partie sauvegardee !"
+                    pickup_message_timer = 120
                 if event.key == pygame.K_1: player.switch_weapon()
                 elif event.key == pygame.K_2: player.use_inventory_item(0)
                 elif event.key == pygame.K_3: player.use_inventory_item(1)

@@ -37,4 +37,6 @@ J : tirer vers la gauche
 K : tirer vers le bas
 L : tirer vers la droite
 
+SAUVEGARDE:
+En jeu, lorsqu'on appuie sur 'F5' une sauvegarde est automatiquement effectuée, pour la récupérer il suffit d'appuyer sur le bouton "CHARGER" du menu
 
