@@ -57,8 +57,8 @@ def lancer_jeu(keyboard_layout="azerty", assets=None):
     bullets, explosions = [], []
     enemy_bullets = []
     warning_circles = []
-
-    current_level = 6
+    #push
+    current_level = 1
     game_map = Map(level=current_level)
     game_finished = False
     ending_transition = False
