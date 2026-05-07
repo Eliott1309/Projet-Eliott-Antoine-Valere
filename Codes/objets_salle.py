@@ -34,8 +34,6 @@ class Chest:
         self.opened = True
         if self.chest_type == "start":
             return random.choice(["sword", "crossbow"])
-        if self.chest_type == "armor_guarantee":
-            return "armor"
         rewards = ["heart", "heart", "damage_boost", "speed_boost", "range_boost",
                    "range_boost", "sword", "crossbow", "bow", "magic_wand", "armor"]
         return random.choice(rewards)

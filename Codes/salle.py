@@ -132,8 +132,7 @@ class Room:
             return
         self.reward_spawned = True
         if len(self.enemies) == 0 or random.random() < 0.45:
-            chest_type = "armor_guarantee" if self.level == 6 else "reward"
-            self.reward_chests.append(Chest(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, chest_type))
+            self.reward_chests.append(Chest(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, "reward"))
         else:
             self.items.append(Item(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, random.choice(["heart", "heart", "heart", "speed"])))
 

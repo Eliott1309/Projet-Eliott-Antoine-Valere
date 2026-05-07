@@ -196,7 +196,7 @@ class Player:
     def draw(self):
         pulse = 2 if pygame.time.get_ticks() // 220 % 2 == 0 else 0
         draw_rect = self.rect.inflate(pulse, pulse)
-        anim_key = "player_armor_anim" if self.has_armor and "player_armor_anim" in self.assets else "player_anim"
+        anim_key = "player_armor_anim" if self.has_armor and self.armor_hp > 0 and "player_armor_anim" in self.assets else "player_anim"
         frames = self.assets.get(anim_key, [self.assets["player"]])
         frame = frames[pygame.time.get_ticks() // 180 % len(frames)]
 
