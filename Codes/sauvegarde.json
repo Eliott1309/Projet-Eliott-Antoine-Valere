@@ -1,1 +1,1 @@
-{"level": 2, "score": 2500, "hp": 94, "armor_hp": 0, "has_armor": false, "weapons": ["crossbow", "sword"], "weapon": "crossbow", "damage_boost": 1, "speed": 7.0, "range_boost": 450, "inventory": []}
+{"level": 8, "score": 42400, "hp": 94, "armor_hp": 0, "has_armor": false, "weapons": ["crossbow", "sword", "bow", "magic_wand"], "weapon": "magic_wand", "damage_boost": 8, "speed": 7, "range_boost": 750, "inventory": ["heart", "heart"]}

@@ -174,6 +174,10 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
                 elif event.key == pygame.K_5: player.use_inventory_item(3)
 
         if game_finished:
+            if not ending_transition:
+                player.move(keys, game_map)
+                player.keep_inside_screen()
+
             game_surface.fill((30, 20, 45))
             pygame.draw.rect(game_surface, (80, 60, 100), (0, 0, WIDTH, HEIGHT), 12)
             pygame.draw.rect(game_surface, (245, 190, 220), princess_rect, border_radius=10)
@@ -232,6 +236,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
             elif keys[pygame.K_l]: dx, dy =  1, 0
 
             if player.weapon and (dx != 0 or dy != 0):
+                player.last_direction = (dx, dy)
                 if player.weapon == "sword":
                     player.sword_attack(dx, dy, game_map.current_room.enemies)
                     shoot_cooldown = 15

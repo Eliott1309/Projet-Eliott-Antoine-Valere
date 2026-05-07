@@ -25,6 +25,7 @@ class Player:
         self.has_armor = False
         self.range_boost  = 0
         self.attack_rect  = None
+        self.last_direction = (1, 0)
         self.attack_timer = 0
         self.attack_direction = None
         self.footstep_timer   = 0
@@ -133,6 +134,12 @@ class Player:
         if keys[pygame.K_s]:     dy += 1
 
         moving = (dx != 0 or dy != 0)
+        
+        if moving:
+            if abs(dx) > abs(dy):
+                self.last_direction = (1, 0) if dx > 0 else (-1, 0)
+            else:
+                self.last_direction = (0, 1) if dy > 0 else (0, -1)
 
         if moving:
             if self.footstep_channel is None or not self.footstep_channel.get_busy():
@@ -193,6 +200,69 @@ class Player:
         if self.rect.top < 0:    self.rect.top = 0
         if self.rect.bottom > HEIGHT: self.rect.bottom = HEIGHT
 
+    #dessine l'arme equipee dans la main du joueur
+    def draw_weapon_in_hand(self):
+        if self.weapon is None:
+            return
+        if self.weapon not in self.assets:
+            return
+
+        weapon_image = self.assets[self.weapon]
+        direction = self.attack_direction if self.attack_timer > 0 else self.last_direction
+
+        weapon_sizes = {
+            "sword": 28,
+            "crossbow": 24,
+            "bow": 26,
+            "magic_wand": 24
+        }
+
+        size = weapon_sizes.get(self.weapon, 24)
+
+
+        weapon_image = pygame.transform.smoothscale(weapon_image, (size, size))
+
+        if self.weapon == "sword":
+            pos = (self.rect.right - 5, self.rect.centery - size//2)
+            weapon_rect = weapon_image.get_rect(center=(pos[0] + size//2, pos[1] + size//2))
+            self.game_surface.blit(weapon_image, weapon_rect)
+            return
+
+
+        dx, dy = direction
+
+        if dx == 1:
+            angle = 0
+            pos = (self.rect.right - 5, self.rect.centery - size//2)
+        elif dx == -1:
+            angle = 180
+            pos = (self.rect.left - size + 5, self.rect.centery - size//2)
+        elif dy == -1:
+            angle = 90
+            pos = (self.rect.centerx - size//2, self.rect.top - size + 8)
+        else:
+            angle = -90
+            pos = (self.rect.centerx - size//2, self.rect.bottom - 8)
+
+        if self.weapon == "crossbow":
+            angle += 180
+
+        if self.weapon == "magic_wand":
+            if dx == 1:
+                angle = -90
+            elif dx == -1:
+                angle = 90
+            elif dy == -1:
+                angle = 0
+            else:
+                angle = 180
+
+
+        weapon_image = pygame.transform.rotate(weapon_image, angle)
+        weapon_rect = weapon_image.get_rect(center=(pos[0] + size//2, pos[1] + size//2))
+        self.game_surface.blit(weapon_image, weapon_rect)
+
+
     def draw(self):
         pulse = 2 if pygame.time.get_ticks() // 220 % 2 == 0 else 0
         draw_rect = self.rect.inflate(pulse, pulse)
@@ -207,6 +277,8 @@ class Player:
             self.game_surface.blit(tinted, draw_rect)
         else:
             self.game_surface.blit(frame, draw_rect)
+        self.draw_weapon_in_hand()
+
 
         if self.attack_timer > 0 and self.attack_rect is not None:
             slash = pygame.Surface((70, 70), pygame.SRCALPHA)
