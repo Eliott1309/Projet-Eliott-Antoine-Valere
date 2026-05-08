@@ -4,12 +4,12 @@ from projectiles import EnemyBullet
 
 
 def load_bg(level, base, width, height):
-    if level == 2:
-        name = "bg2.png"
-    elif level == 3:
-        name = "bg3.png"
+    if level <= 3:
+        name = "bg.jpeg"      
+    elif level <= 6:
+        name = "bg2.png"      
     else:
-        name = "bg.jpeg"
+        name = "bg3.png"
     img = pygame.image.load(os.path.join(base, "assets", name))
     return pygame.transform.scale(img, (width, height))
 

@@ -252,8 +252,12 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
                     bullets.append(Bullet(player.rect.centerx, player.rect.centery, dx, dy,
                                           1+player.damage_boost, 520+player.range_boost,
                                           (120,220,120), 8, image=assets["arrow"]))
-                    player.rect.x -= dx * BOW_KNOCKBACK; player._resolve_collisions(game_map, "x")
-                    player.rect.y -= dy * BOW_KNOCKBACK; player._resolve_collisions(game_map, "y")
+                    for _ in range(10):
+                        player.rect.x += (-dx * BOW_KNOCKBACK) / 10
+                        player._resolve_collisions(game_map, "x")
+                        player.rect.y += (-dy * BOW_KNOCKBACK) / 10
+                        player._resolve_collisions(game_map, "y")
+                    player.keep_inside_screen()
                     shoot_cooldown = 15
 
                 elif player.weapon == "magic_wand":
@@ -315,7 +319,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
 
         # Passage au niveau suivant
         if game_map.next_level_triggered:
-            if current_level >= 10:
+            if current_level >= 9 and game_map.next_level_triggered:
                 game_finished = True
                 game_map.next_level_triggered = False
                 bullets.clear(); explosions.clear()

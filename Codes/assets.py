@@ -45,11 +45,13 @@ def load_assets():
     load_image("enemy_bomber", "enemy_bomber.png", True)
     load_image("boss_warden", "boss_warden.png", True)
     load_image("boss_sorcerer", "boss_sorcerer.png", True)
+    load_image("boss_berserker", "boss_berserker.png", True)
 
     for key in ["enemy_stalker", "enemy_shooter", "enemy_charger", "enemy_bomber"]:
         assets[key] = pygame.transform.smoothscale(assets[key], (47, 47))
     assets["boss_warden"] = pygame.transform.smoothscale(assets["boss_warden"], (76, 76))
     assets["boss_sorcerer"] = pygame.transform.smoothscale(assets["boss_sorcerer"], (76, 76))
+    assets["boss_berserker"] = pygame.transform.smoothscale(assets["boss_berserker"], (76, 76))
 
     assets["heart"] = pygame.image.load(os.path.join(base, "assets", "heart.png")).convert_alpha()
     assets["speed"] = pygame.image.load(os.path.join(base, "assets", "speed.png")).convert_alpha()

@@ -214,14 +214,26 @@ class Boss(Enemy):
         self.boss_kind = boss_kind
         self.level = level
         self.rect = pygame.Rect(x - 38, y - 38, 76, 76)
-        self.speed = 1.4 if boss_kind == "warden" else 1.8
-        self.touch_damage = 10 if boss_kind == "warden" else 8
-        self.hp = 38 + level * 7
+
+        if boss_kind == "warden":
+            self.speed = 1.4
+            self.touch_damage = 10
+            self.hp = 38 + level * 7
+        elif boss_kind == "sorcerer":
+            self.speed = 1.8
+            self.touch_damage = 8
+            self.hp = 38 + level * 7
+        elif boss_kind == "berserker":      
+            self.speed = 3.2
+            self.touch_damage = 14
+            self.hp = 60 + level * 5
+
         self.max_hp = self.hp
         self.attack_timer = 80
         self.pending_ring = []
         self.pending_shot = None
         self.pending_burst = False
+        self.dash_cooldown = 0             
 
     def update(self, player, wall_rects=None):
         if wall_rects is None:
@@ -234,7 +246,7 @@ class Boss(Enemy):
         self.attack_timer -= 1
 
         if self.boss_kind == "warden":
-            # Boss niveau 5 : alterne charges et ondes circulaires.
+            # Boss niveau 3 : alterne charges et ondes circulaires.
             if self.attack_timer <= 0:
                 if random.random() < 0.55:
                     for i in range(12):
@@ -250,9 +262,26 @@ class Boss(Enemy):
                 self.flash_timer = 20
             else:
                 self.move(dx, dy, wall_rects)
+        
+        elif self.boss_kind == "berserker":
+            # Fonce en permanence, avec des dashs répétés et des bursts proches
+            self.move(dx, dy, wall_rects)
+            self.dash_cooldown = max(0, self.dash_cooldown - 1)
+            if self.attack_timer <= 0:
+                if self.dash_cooldown == 0:
+                    # Dash ultra-rapide vers le joueur
+                    old_speed = self.speed
+                    self.speed = 9.0
+                    self.move(dx, dy, wall_rects)
+                    self.speed = old_speed
+                    self.dash_cooldown = 40
+                if d < 90:
+                    self.pending_burst = True
+                self.attack_timer = 35
+                self.flash_timer = 16
 
         else:
-            # Boss niveau 10 : magie, tirs en etoile et explosions proches.
+            # Boss niveau 6 : magie, tirs en etoile et explosions proches.
             if self.attack_timer <= 0:
                 for i in range(16):
                     angle = i * (2 * math.pi / 16) + random.uniform(-0.12, 0.12)
@@ -267,7 +296,12 @@ class Boss(Enemy):
         color = (190, 50, 50) if self.boss_kind == "warden" else (140, 70, 230)
         if self.flash_timer > 0:
             pygame.draw.circle(screen, (255, 220, 120), self.rect.center, 48, 3)
-        sprite_key = "boss_warden" if self.boss_kind == "warden" else "boss_sorcerer"
+        sprite_key = (
+            "boss_warden" if self.boss_kind == "warden"
+            else "boss_sorcerer" if self.boss_kind == "sorcerer"
+            else "boss_berserker"                    
+        )
+        color = (190, 50, 50) if self.boss_kind == "warden" else (140, 70, 230) if self.boss_kind == "sorcerer" else (220, 80, 30)
         if sprite_key in assets:
             frames = assets.get(sprite_key + "_anim", [assets[sprite_key]])
             frame = frames[pygame.time.get_ticks() // 220 % len(frames)]

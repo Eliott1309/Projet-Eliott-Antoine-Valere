@@ -12,7 +12,7 @@ class Room:
         self.level = level
         self.is_start = is_start
         self.is_exit = is_exit
-        self.is_boss_room = is_exit and level in (5, 10)
+        self.is_boss_room = is_exit and level in (3,6,9)
         self.active_doors = set()
         self.visited = False
         self.cleared = is_start
@@ -51,7 +51,12 @@ class Room:
 
     def _spawn_enemies(self):
         if self.is_boss_room:
-            boss_kind = "warden" if self.level == 5 else "sorcerer"
+            if self.level == 3:
+                boss_kind = "warden"
+            elif self.level == 6:
+                boss_kind = "sorcerer"
+            else:
+                 boss_kind = "berserker"
             self.enemies.append(Boss(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, boss_kind, self.level))
             return
         if self.is_start:
@@ -60,7 +65,12 @@ class Room:
         for _ in range(random.randint(1 + self.level // 2, 2 + self.level)):
             if not free_tiles:
                 return
-            ex, ey = random.choice(free_tiles)
+            wall_rects = self.get_wall_rects()
+            valid_tiles = [(ex, ey) for ex, ey in free_tiles
+                if not any(pygame.Rect(ex-20, ey-20, 40, 40).colliderect(w) for w in wall_rects)]
+            if not valid_tiles:
+                return
+            ex, ey = random.choice(valid_tiles)
             enemy = Enemy(ex, ey)
             enemy.level = self.level
             enemy.hp = 2 + self.level
@@ -104,12 +114,15 @@ class Room:
         return {direction: rect for direction, rect in doors.items() if direction in self.active_doors}
 
     def fix_enemy_position(self, enemy):
-        wall_rects = self.get_wall_rects() + list(self.get_door_rects().values())
-        if not any(enemy.rect.colliderect(wall) for wall in wall_rects):
-            return
-        free_tiles = self._free_tiles()
-        if free_tiles:
-            enemy.rect.center = random.choice(free_tiles)
+        wall_rects = self.get_wall_rects()
+        for wall in wall_rects:
+             if enemy.rect.colliderect(wall):
+                dx = enemy.rect.centerx - wall.centerx
+                dy = enemy.rect.centery - wall.centery
+                if abs(dx) >= abs(dy):
+                    enemy.rect.x += 3 if dx >= 0 else -3
+                else:
+                    enemy.rect.y += 3 if dy >= 0 else -3
 
     def update(self, player):
         if self.portal:
@@ -176,12 +189,7 @@ class Room:
 
     def _draw_door(self, screen, assets, x, y):
         screen.blit(assets["door"], (x, y))
-        if self.cleared:
-            pygame.draw.rect(screen, (120, 255, 150), (x + 3, y + 3, TILE_SIZE - 6, TILE_SIZE - 6), 2)
-        else:
-            pygame.draw.line(screen, (180, 40, 40), (x + 8, y + 8), (x + TILE_SIZE - 8, y + TILE_SIZE - 8), 3)
-            pygame.draw.line(screen, (180, 40, 40), (x + TILE_SIZE - 8, y + 8), (x + 8, y + TILE_SIZE - 8), 3)
-
+        
     def _draw_decorations(self, screen):
         tick = pygame.time.get_ticks()
         for x, y, deco in self.decorations:
