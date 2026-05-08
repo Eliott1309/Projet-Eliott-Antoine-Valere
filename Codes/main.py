@@ -20,7 +20,7 @@ WIDTH, HEIGHT = 1080,720
 #resssource
 '''permet de mettre les images, musiques etc en fond'''
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu 
 
 base = os.path.dirname(os.path.abspath(__file__))  # â† juste avant les ressources
@@ -154,7 +154,10 @@ while running:
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_F11:
+                pygame.display.toggle_fullscreen()
     
     pygame.display.flip()
 

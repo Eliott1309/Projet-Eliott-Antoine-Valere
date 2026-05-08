@@ -37,4 +37,7 @@ J : tirer vers la gauche
 K : tirer vers le bas
 L : tirer vers la droite
 
+PLEIN ECRAN
+F11 apres avoir lancer le jeu !
+
 

@@ -46,7 +46,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
 
     WIDTH, HEIGHT = 800, 600
     game_surface = pygame.Surface((WIDTH, HEIGHT))
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((WIDTH, HEIGHT),pygame.RESIZABLE)
     pygame.display.set_caption("Mini Isaac")
 
     try:
@@ -172,7 +172,8 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
                 elif event.key == pygame.K_3: player.use_inventory_item(1)
                 elif event.key == pygame.K_4: player.use_inventory_item(2)
                 elif event.key == pygame.K_5: player.use_inventory_item(3)
-
+                if event.key == pygame.K_F11:
+                    pygame.display.toggle_fullscreen()
         if game_finished:
             if not ending_transition:
                 player.move(keys, game_map)
