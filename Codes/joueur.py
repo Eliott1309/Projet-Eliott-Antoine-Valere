@@ -330,7 +330,7 @@ class Player:
         elif dy == -1: self.attack_rect = pygame.Rect(self.rect.centerx-15, self.rect.top-attack_size, 30, attack_size)
         self.attack_timer = 6
 
-        # Effet de slash
+        #effet de slash
         self.particles.emit_sparks(
             self.rect.centerx + dx * 30,
             self.rect.centery + dy * 30,
