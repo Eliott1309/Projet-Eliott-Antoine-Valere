@@ -9,10 +9,11 @@ from texte import draw_dialog_box, get_medieval_font
 from interface import draw_extra_hud
 from joueur import Player
 from projectiles import Bullet, EnemyBullet, Explosion
-from actions_jeu import (add_score_for_dead_enemies, collect_enemy_attacks,
-                         collect_items, create_magic_explosion, draw_frame,
+from actions_jeu import (ajouter_score_ennemis_morts, collect_items,
+                         faire_explosion_magique, draw_frame,
                          load_bg, open_chests, player_touch_enemies,
-                         show_game_over, show_level_transition)
+                         recuperer_attaques_ennemis, show_game_over,
+                         afficher_entree_niveau)
 
 base = os.path.dirname(os.path.abspath(__file__))
 
@@ -197,7 +198,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
 
             player.draw()
             # Rendu final avec screenshake
-            offset = shake.get_offset()
+            offset = shake.decalage_ecran()
             screen.fill(BLACK)
             screen.blit(game_surface, offset)
             fade.update(); fade.draw(screen)
@@ -277,7 +278,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
                 bullets.remove(bullet); continue
             hit_wall = any(bullet.rect.colliderect(w) for w in wall_rects)
             if hit_wall:
-                if bullet.magic: create_magic_explosion(bullet.rect.centerx, bullet.rect.centery, explosions, game_map, player, particles, shake, extra_lights, extra_lights_timer, Explosion)
+                if bullet.magic: faire_explosion_magique(bullet.rect.centerx, bullet.rect.centery, explosions, game_map, player, particles, shake, extra_lights, extra_lights_timer, Explosion)
                 else: particles.emit_sparks(bullet.rect.centerx, bullet.rect.centery, count=4, color=bullet.color)
                 bullets.remove(bullet); continue
             for enemy in game_map.current_room.enemies:
@@ -287,7 +288,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
                     particles.emit_blood(bullet.rect.centerx, bullet.rect.centery, count=8)
                     shake.trigger(intensity=3, duration=5)
                     if bullet.magic:
-                        create_magic_explosion(bullet.rect.centerx, bullet.rect.centery, explosions, game_map, player, particles, shake, extra_lights, extra_lights_timer, Explosion)
+                        faire_explosion_magique(bullet.rect.centerx, bullet.rect.centery, explosions, game_map, player, particles, shake, extra_lights, extra_lights_timer, Explosion)
                         if bullet in bullets: bullets.remove(bullet)
                         break
                     bullet.pierce -= 1
@@ -295,10 +296,10 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
                         if bullet in bullets: bullets.remove(bullet)
                         break
 
-        score = add_score_for_dead_enemies(game_map, counted_dead_enemies, particles, shake, score)
+        score = ajouter_score_ennemis_morts(game_map, counted_dead_enemies, particles, shake, score)
 
         game_map.update(player)
-        collect_enemy_attacks(game_map, enemy_bullets, player, warning_circles)
+        recuperer_attaques_ennemis(game_map, enemy_bullets, player, warning_circles)
 
         for enemy_bullet in enemy_bullets[:]:
             enemy_bullet.update()
@@ -329,7 +330,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
             else:
                 current_level += 1
                 current_bg = load_bg(current_level, base, WIDTH, HEIGHT)
-                show_level_transition(current_level, screen, WIDTH, HEIGHT, get_medieval_font)
+                afficher_entree_niveau(current_level, screen, WIDTH, HEIGHT, get_medieval_font)
                 game_map = Map(level=current_level)
                 bullets.clear(); explosions.clear()
                 enemy_bullets.clear(); warning_circles.clear()
@@ -338,7 +339,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
                 player.rect.center = (WIDTH//2, HEIGHT//2)
                 player.transition_lock = 0
                 score += current_level * 500
-                pickup_message = f"Niveau {current_level} â€” Bonne chance !"
+                pickup_message = f"Niveau {current_level} - Bonne chance !"
                 pickup_message_timer = 180
 
         message, timer = open_chests(player, game_map.current_room, particles)

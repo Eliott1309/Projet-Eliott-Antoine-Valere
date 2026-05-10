@@ -14,7 +14,8 @@ def load_bg(level, base, width, height):
     return pygame.transform.scale(img, (width, height))
 
 
-def add_score_for_dead_enemies(game_map, counted_dead_enemies, particles, shake, score):
+#ca prend la map, les ennemis deja comptes et le score, puis ca ajoute les points quand un ennemi meurt et ca renvoie le nouveau score
+def ajouter_score_ennemis_morts(game_map, counted_dead_enemies, particles, shake, score):
     for enemy in game_map.current_room.enemies:
         if enemy.hp <= 0 and id(enemy) not in counted_dead_enemies:
             counted_dead_enemies.add(id(enemy))
@@ -25,8 +26,9 @@ def add_score_for_dead_enemies(game_map, counted_dead_enemies, particles, shake,
     return score
 
 
-def create_magic_explosion(x, y, explosions, game_map, player, particles,
-                           shake, extra_lights, extra_lights_timer, Explosion):
+#ca prend une position et les listes d'effets, ca cree une explosion magique et ca retire de la vie aux ennemis autour
+def faire_explosion_magique(x, y, explosions, game_map, player, particles,
+                            shake, extra_lights, extra_lights_timer, Explosion):
     explosions.append(Explosion(x, y))
     explosion_rect = pygame.Rect(x - 55, y - 55, 110, 110)
     particles.emit_explosion(x, y)
@@ -38,14 +40,16 @@ def create_magic_explosion(x, y, explosions, game_map, player, particles,
             enemy.hp -= 2 + player.damage_boost
 
 
-def create_enemy_burst(x, y, player, warning_circles, radius=70, damage=8):
+#ca prend la position d'un ennemi et le joueur, ca affiche un cercle dangereux et ca blesse si le joueur est dedans
+def faire_attaque_zone_ennemi(x, y, player, warning_circles, radius=70, damage=8):
     warning_circles.append([x, y, radius, 14])
     burst_rect = pygame.Rect(x - radius, y - radius, radius * 2, radius * 2)
     if burst_rect.colliderect(player.rect):
         player.take_damage(damage)
 
 
-def collect_enemy_attacks(game_map, enemy_bullets, player, warning_circles):
+#ca prend les ennemis de la salle, ca recupere leurs tirs en attente et ca les met dans les listes du jeu
+def recuperer_attaques_ennemis(game_map, enemy_bullets, player, warning_circles):
     for enemy in game_map.current_room.enemies:
         if enemy.hp <= 0:
             continue
@@ -58,23 +62,25 @@ def collect_enemy_attacks(game_map, enemy_bullets, player, warning_circles):
             x, y, dx, dy, damage, color, size = ring_shot
             enemy_bullets.append(EnemyBullet(x, y, dx, dy, damage, color, size, speed=3.6))
         if getattr(enemy, "pending_burst", False):
-            create_enemy_burst(enemy.rect.centerx, enemy.rect.centery, player, warning_circles, 80, 8)
+            faire_attaque_zone_ennemi(enemy.rect.centerx, enemy.rect.centery, player, warning_circles, 80, 8)
             enemy.pending_burst = False
 
 
-def show_level_transition(level, screen, width, height, get_medieval_font):
+#ca prend le niveau et l'ecran, ca affiche le petit ecran avant de commencer et ca ne renvoie rien
+def afficher_entree_niveau(level, screen, width, height, get_medieval_font):
     overlay = pygame.Surface((width, height))
     overlay.fill((10, 5, 20))
-    title = get_medieval_font(64).render(f"Niveau  {level}", True, (200, 130, 255))
+    title = get_medieval_font(64).render(f"Niveau {level}", True, (200, 130, 255))
     subtitle = get_medieval_font(28).render("Prepare-toi...", True, (180, 180, 180))
     for alpha in range(0, 256, 8):
-        _draw_level_overlay(screen, overlay, title, subtitle, width, height, alpha)
+        dessiner_fondu_niveau(screen, overlay, title, subtitle, width, height, alpha)
     pygame.time.delay(1200)
     for alpha in range(255, -1, -8):
-        _draw_level_overlay(screen, overlay, title, subtitle, width, height, alpha)
+        dessiner_fondu_niveau(screen, overlay, title, subtitle, width, height, alpha)
 
 
-def _draw_level_overlay(screen, overlay, title, subtitle, width, height, alpha):
+#ca prend les textes du niveau et l'alpha, ca dessine juste une image du fondu sur l'ecran
+def dessiner_fondu_niveau(screen, overlay, title, subtitle, width, height, alpha):
     overlay.set_alpha(alpha)
     screen.blit(overlay, (0, 0))
     screen.blit(title, (width // 2 - title.get_width() // 2, height // 2 - 60))
@@ -208,8 +214,8 @@ def draw_frame(game_surface, screen, game_map, assets, particles, player, hud_da
     scale = min(sw / 800, sh / 600)
     scaled_w, scaled_h = int(800 * scale), int(600 * scale)
     scaled = pygame.transform.scale(game_surface, (scaled_w, scaled_h))
-    ox = (sw - scaled_w) // 2 + shake.get_offset()[0]
-    oy = (sh - scaled_h) // 2 + shake.get_offset()[1]
+    ox = (sw - scaled_w) // 2 + shake.decalage_ecran()[0]
+    oy = (sh - scaled_h) // 2 + shake.decalage_ecran()[1]
     screen.blit(scaled, (ox, oy))
     fade.update()
     fade.draw(screen)

@@ -4,16 +4,19 @@ import pygame
 
 
 class ScreenShake:
+    #au depart le tremblement est coupe, donc on met juste les valeurs a zero
     def __init__(self):
         self.timer = 0
         self.intensity = 0
 
+    #lance un tremblement avec une force et une duree, ca ne renvoie rien
     def trigger(self, intensity=6, duration=10):
         if intensity >= self.intensity:
             self.timer = duration
             self.intensity = intensity
 
-    def get_offset(self):
+    #ca prend rien, ca calcule le decalage du screen shake et ca renvoie un petit x,y
+    def decalage_ecran(self):
         if self.timer > 0:
             self.timer -= 1
             strength = self.intensity * (self.timer / max(1, self.timer + 1))
@@ -24,6 +27,7 @@ class ScreenShake:
 
 
 class Particle:
+    #prepare une particule avec sa position, sa couleur et sa vitesse pour les effets visuels
     def __init__(self, x, y, color, dx=0, dy=0, life=30, size=4, gravity=0.12, fade=True):
         self.x, self.y = float(x), float(y)
         self.dx = dx + random.uniform(-1.2, 1.2)
@@ -35,6 +39,7 @@ class Particle:
         self.gravity = gravity
         self.fade = fade
 
+    #a chaque frame la particule bouge, tombe un peu et perd de la duree de vie
     def update(self):
         self.x += self.dx
         self.y += self.dy
@@ -42,6 +47,7 @@ class Particle:
         self.dx *= 0.95
         self.life -= 1
 
+    #dessine la particule sur l'ecran si elle est encore vivante, ca renvoie rien
     def draw(self, screen):
         if self.life <= 0:
             return
@@ -54,9 +60,11 @@ class Particle:
 
 
 class ParticleSystem:
+    #on stocke ici toutes les particules du jeu dans une seule liste
     def __init__(self):
         self.particles = []
 
+    #ajoute des particules rouges a une position, surtout quand un ennemi est touche
     def emit_blood(self, x, y, count=8):
         for _ in range(count):
             angle = random.uniform(0, 2 * math.pi)
@@ -71,6 +79,7 @@ class ParticleSystem:
                 gravity=0.18,
             ))
 
+    #sert pour faire un petit nuage de poussiere, ca prend une position et un nombre
     def emit_dust(self, x, y, count=3):
         for _ in range(count):
             self.particles.append(Particle(
@@ -83,6 +92,7 @@ class ParticleSystem:
                 gravity=0.04,
             ))
 
+    #ajoute des particules magiques avec une couleur donnee, utile pour coffres et sorts
     def emit_magic(self, x, y, count=12, color=(160, 90, 255)):
         for _ in range(count):
             angle = random.uniform(0, 2 * math.pi)
@@ -96,6 +106,7 @@ class ParticleSystem:
                 gravity=-0.05,
             ))
 
+    #fait des petites etincelles autour d'un point, ca sert pour les impacts
     def emit_sparks(self, x, y, count=6, color=(255, 220, 80)):
         for _ in range(count):
             angle = random.uniform(0, 2 * math.pi)
@@ -109,27 +120,32 @@ class ParticleSystem:
                 gravity=0.25,
             ))
 
+    #regroupe magie, etincelles et un peu de rouge pour donner une explosion plus visible
     def emit_explosion(self, x, y):
         self.emit_magic(x, y, count=20, color=(160, 90, 255))
         self.emit_sparks(x, y, count=12, color=(255, 160, 60))
         self.emit_blood(x, y, count=6)
 
+    #met a jour toutes les particules et enleve celles qui sont mortes
     def update(self):
         self.particles = [p for p in self.particles if p.life > 0]
         for particle in self.particles:
             particle.update()
 
+    #dessine toutes les particules encore presentes sur la surface du jeu
     def draw(self, screen):
         for particle in self.particles:
             particle.draw(screen)
 
 
 class DynamicLighting:
+    #prepare la surface sombre et le cache des lumieres pour eviter de tout recalculer
     def __init__(self, width, height):
         self._surface = pygame.Surface((width, height), pygame.SRCALPHA)
         self._light_cache = {}
 
-    def _get_light_texture(self, radius):
+    #ca prend un rayon, ca fabrique ou recupere l'image noire qui sert pour la lumiere
+    def _image_lumiere(self, radius):
         if radius in self._light_cache:
             return self._light_cache[radius]
         texture = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
@@ -139,17 +155,19 @@ class DynamicLighting:
         self._light_cache[radius] = texture
         return texture
 
+    #dessine l'ombre puis retire de l'ombre autour du joueur et des lumieres speciales
     def draw(self, screen, player, extra_lights=None):
         self._surface.fill((0, 0, 0, 165))
         px, py = player.rect.center
-        self._surface.blit(self._get_light_texture(400), (px - 400, py - 400), special_flags=pygame.BLEND_RGBA_SUB)
+        self._surface.blit(self._image_lumiere(400), (px - 400, py - 400), special_flags=pygame.BLEND_RGBA_SUB)
         if extra_lights:
             for lx, ly, radius, _color in extra_lights:
-                self._surface.blit(self._get_light_texture(radius), (lx - radius, ly - radius), special_flags=pygame.BLEND_RGBA_SUB)
+                self._surface.blit(self._image_lumiere(radius), (lx - radius, ly - radius), special_flags=pygame.BLEND_RGBA_SUB)
         screen.blit(self._surface, (0, 0))
 
 
 class FadeTransition:
+    #prepare une surface noire qui servira pour faire les transitions entre salles
     def __init__(self, width, height):
         self.surface = pygame.Surface((width, height))
         self.surface.fill((0, 0, 0))
@@ -158,6 +176,7 @@ class FadeTransition:
         self.speed = 18
         self.callback = None
 
+    #demarre le fondu et garde une fonction a lancer au milieu si on en donne une
     def start(self, callback=None):
         if self.state == "idle":
             self.state = "fade_out"
@@ -165,9 +184,11 @@ class FadeTransition:
             self.callback = callback
 
     @property
+    #renvoie vrai si le fondu est en train de se faire, sinon faux
     def is_active(self):
         return self.state != "idle"
 
+    #avance le fondu noir frame par frame et appelle le callback au bon moment
     def update(self):
         if self.state == "fade_out":
             self.alpha = min(255, self.alpha + self.speed)
@@ -181,6 +202,7 @@ class FadeTransition:
             if self.alpha <= 0:
                 self.state = "idle"
 
+    #affiche la surface noire avec l'opacite actuelle si la transition tourne
     def draw(self, screen):
         if self.state != "idle":
             self.surface.set_alpha(self.alpha)

@@ -26,23 +26,25 @@ class Enemy:
         self.state         = "idle"      # idle | alert | chase | wander | patrol
         self.alert_timer   = 0           # frames de mise en alerte avant d'attaquer
         self.wander_timer  = 0           # compteur pour changer de direction
-        self.wander_dir    = self.random_dir()
+        self.wander_dir    = self.direction_hasard()
         self.patrol_points = []          # dÃ©fini aprÃ¨s spawn dans map.py si besoin
         self.patrol_index  = 0
         self.spawn_x       = x
         self.spawn_y       = y
 
-    def random_dir(self):
+    #ca prend rien, ca choisi une direction au hasard et ca renvoie dx,dy pour bouger
+    def direction_hasard(self):
         angle = random.uniform(0, 2 * math.pi)
         return math.cos(angle), math.sin(angle)
 
-    def dist(self, player):
+    #ca prend le joueur, ca calcule la distance avec lui et ca renvoie distance,dx,dy
+    def distance_joueur(self, player):
         dx = player.rect.centerx - self.rect.centerx
         dy = player.rect.centery - self.rect.centery
         return math.hypot(dx, dy), dx, dy
 
-    #dÃ©place l'ennemi sans le laisser entrer dans les murs
-    def move(self, dx, dy, wall_rects):
+    #ca prend une direction et les murs, ca deplace l'ennemi sans le laisser rentrer dedans
+    def deplacer(self, dx, dy, wall_rects):
         if dx == 0 and dy == 0:
             return
 
@@ -56,7 +58,7 @@ class Enemy:
                     self.rect.right = wall.left
                 elif dx < 0:
                     self.rect.left = wall.right
-                self.wander_dir = self.random_dir()
+                self.wander_dir = self.direction_hasard()
                 break
 
         self.rect.y += dy * self.speed
@@ -66,7 +68,7 @@ class Enemy:
                     self.rect.bottom = wall.top
                 elif dy < 0:
                     self.rect.top = wall.bottom
-                self.wander_dir = self.random_dir()
+                self.wander_dir = self.direction_hasard()
                 break
 
 
@@ -80,7 +82,7 @@ class Enemy:
         if self.flash_timer > 0:
             self.flash_timer -= 1
 
-        d, dx, dy = self.dist(player)
+        d, dx, dy = self.distance_joueur(player)
 
         self.attack_timer -= 1
         if self.kind == "shooter" and d < DETECTION_RADIUS * 1.4 and self.attack_timer <= 0:
@@ -100,7 +102,7 @@ class Enemy:
             self.state = "wander"
 
         if self.state == "idle":
-            self.ai_idle()
+            self.attendre_un_peu()
         elif self.state == "alert":
             self.alert_timer -= 1
             if self.alert_timer <= 0:
@@ -109,46 +111,50 @@ class Enemy:
             if self.kind == "charger" and self.attack_timer <= 0 and d < DETECTION_RADIUS * 1.2:
                 old_speed = self.speed
                 self.speed = old_speed * 2.3
-                self.move(dx, dy, wall_rects)
+                self.deplacer(dx, dy, wall_rects)
                 self.speed = old_speed
                 self.attack_timer = 85
                 self.flash_timer = 14
                 return
-            self.ai_chase(dx, dy, d, wall_rects)
+            self.suivre_joueur(dx, dy, d, wall_rects)
         elif self.state == "wander":
-            self.ai_wander(wall_rects)
+            self.se_balader(wall_rects)
         elif self.state == "patrol":
-            self.ai_patrol(wall_rects)
+            self.faire_patrouille(wall_rects)
 
-    def ai_idle(self):
+    #ca prend rien, ca laisse l'ennemi attendre et parfois il part se balader
+    def attendre_un_peu(self):
         if random.random() < 0.005:
             self.state        = "wander"
             self.wander_timer = WANDER_CHANGE
 
-    def ai_chase(self, dx, dy, d, wall_rects):
+    #ca prend la direction du joueur, la distance et les murs, puis ca fait la poursuite selon le type d'ennemi
+    def suivre_joueur(self, dx, dy, d, wall_rects):
         if self.behavior == "chaser":
-            self.move(dx, dy, wall_rects)
+            self.deplacer(dx, dy, wall_rects)
         elif self.behavior == "cautious":
             if d > DETECTION_RADIUS * 0.5:
-                self.move(dx, dy, wall_rects)
+                self.deplacer(dx, dy, wall_rects)
             else:
-                self.move(-dy, dx, wall_rects)
+                self.deplacer(-dy, dx, wall_rects)
         elif self.behavior == "patrol":
             if random.random() < 0.015:
-                self.move(-dx, -dy, wall_rects)
+                self.deplacer(-dx, -dy, wall_rects)
             else:
-                self.move(dx, dy, wall_rects)
+                self.deplacer(dx, dy, wall_rects)
 
-    def ai_wander(self, wall_rects):
+    #ca prend les murs, ca fait bouger l'ennemi au hasard et ca change parfois de direction
+    def se_balader(self, wall_rects):
         self.wander_timer -= 1
         if self.wander_timer <= 0:
-            self.wander_dir   = self.random_dir()
+            self.wander_dir   = self.direction_hasard()
             self.wander_timer = WANDER_CHANGE + random.randint(-20, 20)
-        self.move(self.wander_dir[0], self.wander_dir[1], wall_rects)
+        self.deplacer(self.wander_dir[0], self.wander_dir[1], wall_rects)
 
-    def ai_patrol(self, wall_rects):
+    #ca prend les murs, ca fait aller l'ennemi entre ses points de patrouille
+    def faire_patrouille(self, wall_rects):
         if not self.patrol_points:
-            self.ai_wander(wall_rects)
+            self.se_balader(wall_rects)
             return
         target = self.patrol_points[self.patrol_index]
         dx = target[0] - self.rect.centerx
@@ -156,7 +162,7 @@ class Enemy:
         if math.hypot(dx, dy) < 8:
             self.patrol_index = (self.patrol_index + 1) % len(self.patrol_points)
         else:
-            self.move(dx, dy, wall_rects)
+            self.deplacer(dx, dy, wall_rects)
 
     def draw(self, screen, assets):
         if self.kind == "shooter":
@@ -242,7 +248,7 @@ class Boss(Enemy):
         self.pending_shot = None
         self.pending_burst = False
         self.flash_timer = max(0, self.flash_timer - 1)
-        d, dx, dy = self.dist(player)
+        d, dx, dy = self.distance_joueur(player)
         self.attack_timer -= 1
 
         if self.boss_kind == "warden":
@@ -256,23 +262,23 @@ class Boss(Enemy):
                 else:
                     old_speed = self.speed
                     self.speed = 5.2
-                    self.move(dx, dy, wall_rects)
+                    self.deplacer(dx, dy, wall_rects)
                     self.speed = old_speed
                     self.attack_timer = 55
                 self.flash_timer = 20
             else:
-                self.move(dx, dy, wall_rects)
+                self.deplacer(dx, dy, wall_rects)
         
         elif self.boss_kind == "berserker":
             # Fonce en permanence, avec des dashs répétés et des bursts proches
-            self.move(dx, dy, wall_rects)
+            self.deplacer(dx, dy, wall_rects)
             self.dash_cooldown = max(0, self.dash_cooldown - 1)
             if self.attack_timer <= 0:
                 if self.dash_cooldown == 0:
                     # Dash ultra-rapide vers le joueur
                     old_speed = self.speed
                     self.speed = 9.0
-                    self.move(dx, dy, wall_rects)
+                    self.deplacer(dx, dy, wall_rects)
                     self.speed = old_speed
                     self.dash_cooldown = 40
                 if d < 90:
@@ -290,7 +296,7 @@ class Boss(Enemy):
                     self.pending_burst = True
                 self.attack_timer = 90
                 self.flash_timer = 24
-            self.move(dx if d > 150 else -dx, dy if d > 150 else -dy, wall_rects)
+            self.deplacer(dx if d > 150 else -dx, dy if d > 150 else -dy, wall_rects)
 
     def draw(self, screen, assets):
         color = (190, 50, 50) if self.boss_kind == "warden" else (140, 70, 230)

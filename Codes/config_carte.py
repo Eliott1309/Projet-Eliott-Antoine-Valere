@@ -9,10 +9,12 @@ MINI_ROOM_SIZE = 12
 MINI_ROOM_GAP = 4
 
 
+#ici on cree une salle vide, ca prend rien et ca renvoie une grille sans obstacle
 def make_empty():
     return [[0] * COLS for _ in range(ROWS)]
 
 
+#on part d'une grille vide puis on met 4 gros piliers, ca renvoie la grille finie
 def make_piliers():
     grid = make_empty()
     for px, py in [(5, 4), (5, 10), (14, 4), (14, 10)]:
@@ -22,6 +24,7 @@ def make_piliers():
     return grid
 
 
+#sert a faire une salle en forme de croix, ca ne prend rien et renvoie la grille
 def make_croix():
     grid = [[1] * COLS for _ in range(ROWS)]
     for row in range(5, 10):
@@ -33,6 +36,7 @@ def make_croix():
     return grid
 
 
+#ici ca coupe la salle en deux avec un passage au milieu, puis ca renvoie la grille
 def make_chambres():
     grid = make_empty()
     for row in range(ROWS):
@@ -42,6 +46,7 @@ def make_chambres():
     return grid
 
 
+#on ajoute des petits murs au hasard pour faire labyrinthe, ca renvoie la salle cree
 def make_labyrinthe():
     grid = make_empty()
     for _ in range(12):
