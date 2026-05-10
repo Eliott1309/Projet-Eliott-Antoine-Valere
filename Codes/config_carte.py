@@ -5,8 +5,8 @@ SCREEN_HEIGHT = 600
 TILE_SIZE = 40
 COLS = SCREEN_WIDTH // TILE_SIZE
 ROWS = SCREEN_HEIGHT // TILE_SIZE
-MINI_ROOM_SIZE = 12
-MINI_ROOM_GAP = 4
+MINI_ROOM_SIZE = 16
+MINI_ROOM_GAP = 5
 
 
 #ici on cree une salle vide, ca prend rien et ca renvoie une grille sans obstacle

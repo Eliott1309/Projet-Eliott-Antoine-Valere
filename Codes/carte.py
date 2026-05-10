@@ -75,18 +75,24 @@ class Map:
         if portal and portal.active and portal.rect.colliderect(player.rect):
             self.next_level_triggered = True
 
-    #dessine la salle actuelle puis la mini carte par dessus
-    def draw(self, screen, assets):
+    #dessine la salle actuelle, et la mini carte seulement si on la demande
+    def draw(self, screen, assets, show_minimap=True):
         self.current_room.draw(screen, assets)
-        self._dessiner_mini_carte(screen)
+        if show_minimap:
+            self.dessiner_mini_carte(screen)
 
-    #ca prend l'ecran, ca dessine les salles deja vues et ca ne renvoie rien
-    def _dessiner_mini_carte(self, screen):
+    #ca prend l'ecran, ca dessine les salles vues et les prochaines salles possibles
+    def dessiner_mini_carte(self, screen):
         step = MINI_ROOM_SIZE + MINI_ROOM_GAP
         all_x = [x for x, _y in self.rooms]
         all_y = [y for _x, y in self.rooms]
-        offset_x = SCREEN_WIDTH - (max(all_x) - min(all_x) + 1) * step - 10
-        offset_y = 10
+        map_w = (max(all_x) - min(all_x) + 1) * step - MINI_ROOM_GAP
+        map_h = (max(all_y) - min(all_y) + 1) * step - MINI_ROOM_GAP
+        offset_x = SCREEN_WIDTH - map_w - 14
+        offset_y = 14
+        panel = pygame.Surface((map_w + 16, map_h + 16), pygame.SRCALPHA)
+        panel.fill((8, 8, 14, 185))
+        screen.blit(panel, (offset_x - 8, offset_y - 8))
         for (x, y), room in self.rooms.items():
             if not room.visited and not self._est_a_cote(x, y):
                 continue
@@ -94,8 +100,11 @@ class Map:
             ry = offset_y + (y - min(all_y)) * step
             color = self._couleur_salle(room, (x, y))
             pygame.draw.rect(screen, color, (rx, ry, MINI_ROOM_SIZE, MINI_ROOM_SIZE), border_radius=2)
+            pygame.draw.rect(screen, (235, 235, 245), (rx, ry, MINI_ROOM_SIZE, MINI_ROOM_SIZE), 1, border_radius=2)
             if room.is_exit:
                 pygame.draw.rect(screen, (200, 130, 255), (rx - 1, ry - 1, MINI_ROOM_SIZE + 2, MINI_ROOM_SIZE + 2), 1)
+            if not room.visited and self._est_a_cote(x, y):
+                pygame.draw.rect(screen, (255, 255, 255), (rx - 2, ry - 2, MINI_ROOM_SIZE + 4, MINI_ROOM_SIZE + 4), 2, border_radius=3)
 
     #ca prend les coordonnees d'une salle et ca dit si elle touche la salle actuelle
     def _est_a_cote(self, x, y):
@@ -107,7 +116,7 @@ class Map:
         if coord == self.current_pos:
             return (255, 255, 120)
         if not room.visited:
-            return (70, 70, 85)
+            return (120, 170, 255)
         if room.is_exit:
             return (160, 80, 255)
         if room.cleared:

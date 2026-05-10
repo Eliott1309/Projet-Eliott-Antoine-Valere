@@ -184,7 +184,7 @@ def draw_frame(game_surface, screen, game_map, assets, particles, player, hud_da
                extra_lights, portal_light, shake, fade, black):
     draw_extra_hud = hud_data[0]
     score, pickup_message, pickup_timer, font_hud, font_message, width = hud_data[1:]
-    game_map.draw(game_surface, assets)
+    game_map.draw(game_surface, assets, show_minimap=False)
     particles.update()
     particles.draw(game_surface)
     player.draw_hp_bar(game_surface)
@@ -209,13 +209,15 @@ def draw_frame(game_surface, screen, game_map, assets, particles, player, hud_da
             warning_circles.remove(warning)
     all_extra = extra_lights + portal_light
     lighting.draw(game_surface, player, all_extra if all_extra else None)
+    game_map.dessiner_mini_carte(game_surface)
     screen.fill(black)
     sw, sh = screen.get_size()
     scale = min(sw / 800, sh / 600)
     scaled_w, scaled_h = int(800 * scale), int(600 * scale)
     scaled = pygame.transform.scale(game_surface, (scaled_w, scaled_h))
-    ox = (sw - scaled_w) // 2 + shake.decalage_ecran()[0]
-    oy = (sh - scaled_h) // 2 + shake.decalage_ecran()[1]
+    shake_x, shake_y = shake.decalage_ecran()
+    ox = (sw - scaled_w) // 2 + shake_x
+    oy = (sh - scaled_h) // 2 + shake_y
     screen.blit(scaled, (ox, oy))
     fade.update()
     fade.draw(screen)
