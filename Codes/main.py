@@ -5,6 +5,8 @@ from assets import load_assets
 from jeu import lancer_jeu
 import os
 base = os.path.dirname(os.path.abspath(__file__))
+GAME_TITLE = "Les dongeons perdus; la derniere aventure d'Isaac"
+MENU_TITLE_LINES = ("Les dongeons perdus;", "la derniere aventure d'Isaac")
 
 #test
 def start():
@@ -21,7 +23,7 @@ WIDTH, HEIGHT = 1080,720
 '''permet de mettre les images, musiques etc en fond'''
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("Bindings of Isaac") #mettre nouveau nom du jeu 
+pygame.display.set_caption(GAME_TITLE) #mettre nouveau nom du jeu 
 
 base = os.path.dirname(os.path.abspath(__file__))  # â† juste avant les ressources
 
@@ -40,11 +42,11 @@ assets = load_assets()
 
 #polices
 try : 
-    FONT_TITLES = pygame.font.Font("../Assets/medieval.ttf", 72)
+    FONT_TITLES = pygame.font.Font("../Assets/medieval.ttf", 46)
     FONT_BUTTON = pygame.font.Font("../Assets/medieval.ttf", 36)
 
 except :
-    FONT_TITLES = pygame.font.Font(None, 72)
+    FONT_TITLES = pygame.font.Font(None, 46)
     FONT_BUTTON = pygame.font.Font(None, 36)
 
 class Button:
@@ -107,10 +109,12 @@ while running:
     mouse_pos = pygame.mouse.get_pos()
     mouse_pressed = pygame.mouse.get_pressed()
 
-    title = FONT_TITLES.render("Bindings of Isaac", True, WHITE) #partie esthetique du menu
-    shadow = FONT_TITLES.render("Bindings of Isaac", True, SHADOW) #titre a changer
-    screen.blit(shadow, (WIDTH//2 - title.get_width()//2 + 3, 103)) #j'affiche l'ombre legerement decalee 
-    screen.blit(title, (WIDTH//2 - title.get_width()//2 , 100)) #affichage du texte principal
+    for i, title_line in enumerate(MENU_TITLE_LINES):
+        title = FONT_TITLES.render(title_line, True, WHITE) #partie esthetique du menu
+        shadow = FONT_TITLES.render(title_line, True, SHADOW) #titre a changer
+        y = 78 + i * 48
+        screen.blit(shadow, (WIDTH//2 - title.get_width()//2 + 3, y + 3)) #j'affiche l'ombre legerement decalee 
+        screen.blit(title, (WIDTH//2 - title.get_width()//2 , y)) #affichage du texte principal
 
     #je definis ce que font les boutons
     if menu_state == "main":

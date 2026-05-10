@@ -16,6 +16,7 @@ from actions_jeu import (ajouter_score_ennemis_morts, collect_items,
                          afficher_entree_niveau)
 
 base = os.path.dirname(os.path.abspath(__file__))
+GAME_TITLE = "Les dongeons perdus; la derniere aventure d'Isaac"
 
 def sauvegarder_partie(player, current_level, score):
     data = {
@@ -48,7 +49,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
     WIDTH, HEIGHT = 800, 600
     game_surface = pygame.Surface((WIDTH, HEIGHT))
     screen = pygame.display.set_mode((WIDTH, HEIGHT),pygame.RESIZABLE)
-    pygame.display.set_caption("Mini Isaac")
+    pygame.display.set_caption(GAME_TITLE)
 
     try:
         pygame.mixer.music.load(os.path.join(base, "assets", "music.mp3"))
