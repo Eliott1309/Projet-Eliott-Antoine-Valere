@@ -27,7 +27,7 @@ class Enemy:
         self.alert_timer   = 0           # frames de mise en alerte avant d'attaquer
         self.wander_timer  = 0           # compteur pour changer de direction
         self.wander_dir    = self.direction_hasard()
-        self.patrol_points = []          # dÃ©fini aprÃ¨s spawn dans map.py si besoin
+        self.patrol_points = []         
         self.patrol_index  = 0
         self.spawn_x       = x
         self.spawn_y       = y
