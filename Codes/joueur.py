@@ -340,8 +340,8 @@ class Player:
         for enemy in enemies:
             if enemy.hp > 0 and self.attack_rect.colliderect(enemy.rect):
                 enemy.hp -= 2 + self.damage_boost
-                enemy.rect.x += dx * 32
-                enemy.rect.y += dy * 32
+                enemy.rect.x = max(40, min(800 - 40, enemy.rect.x + dx * 32))
+                enemy.rect.y = max(40, min(600 - 40, enemy.rect.y + dy * 32))
                 self.shake.trigger(intensity=4, duration=7)
                 self.particles.emit_blood(enemy.rect.centerx, enemy.rect.centery, count=10)
 

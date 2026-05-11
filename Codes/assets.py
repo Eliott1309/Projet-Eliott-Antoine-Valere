@@ -28,12 +28,15 @@ def load_assets():
     load_image("door", "door.png", True)
     load_image("enemy", "enemy.png", True)
     load_image("player", "player.png", True)
+    load_image("princess", "princess_end_game.png", True)
 
     assets["floor"]  = pygame.transform.smoothscale(assets["floor"],  (TILE_SIZE, TILE_SIZE))
     assets["wall"]   = pygame.transform.smoothscale(assets["wall"],   (TILE_SIZE, TILE_SIZE))
     assets["door"]   = pygame.transform.smoothscale(assets["door"],   (TILE_SIZE, TILE_SIZE))
     assets["enemy"]  = pygame.transform.smoothscale(assets["enemy"],  (47, 47))
     assets["player"] = pygame.transform.smoothscale(assets["player"], (40, 40))
+    assets["princess"] = pygame.transform.smoothscale(assets["princess"], (50, 70))
+
 
     load_image("player_armor", "player_armor.png", True)
     assets["player_armor"] = pygame.transform.smoothscale(assets["player_armor"], (58, 58))

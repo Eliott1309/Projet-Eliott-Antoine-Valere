@@ -185,7 +185,7 @@ def lancer_jeu(keyboard_layout="azerty", assets=None, charger = False):
             pygame.draw.rect(game_surface, (80, 60, 100), (0, 0, WIDTH, HEIGHT), 12)
             pygame.draw.rect(game_surface, (245, 190, 220), princess_rect, border_radius=10)
             pygame.draw.circle(game_surface, (255, 225, 190), (princess_rect.centerx, princess_rect.y + 15), 16)
-            pygame.draw.rect(game_surface, (255, 220, 80), (princess_rect.x + 8, princess_rect.y - 8, 34, 10), border_radius=3)
+            game_surface.blit(assets["princess"], princess_rect)
             label = font_message.render("Princesse", True, WHITE)
             game_surface.blit(label, label.get_rect(center=(WIDTH//2, HEIGHT//2 + 55)))
 
