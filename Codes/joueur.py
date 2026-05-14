@@ -290,7 +290,7 @@ class Player:
 
     def draw_inventory(self, surface, assets):
         slot_size, spacing = 30, 5
-        bottom_y = HEIGHT - 10  # ancrage bas de l'écran
+        bottom_y = HEIGHT - 10  #ancrage bas de l'écran
 
         #colonne armes 
         weapon_x = 10
